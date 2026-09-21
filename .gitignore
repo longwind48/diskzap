@@ -1,3 +1,7 @@
 /target
 Cargo.lock
 *.log
+
+# imagegen scratch output; finals live in assets/
+output/
+.claude/skills/
