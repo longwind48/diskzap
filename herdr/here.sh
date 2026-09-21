@@ -52,19 +52,25 @@ trap 'rm -f "$out"' EXIT
 # of this read even when the scan was quick.
 frames=('⢎ ' '⠎⠁' '⠊⠑' '⠈⠱' ' ⡱' '⢀⡰' '⢄⡠' '⢆⡀')
 
-printf '\n  \033[1mReclaimable here\033[0m  %s\n' "$disp"
+# Animate until $1 (a pid) exits, then clear the line.
+spin() {
+  local pid=$1 label=$2 i=0
+  while kill -0 "$pid" 2>/dev/null; do
+    printf '\r  \033[2m%s %s\033[0m' "${frames[$((i % 8))]}" "$label"
+    i=$((i + 1))
+    sleep 0.08
+  done
+  wait "$pid"
+  printf '\r\033[K'
+}
+
+# The popup's own title bar already says "reclaimable here", so the body leads
+# with the path instead of repeating it.
+printf '\n  \033[2m%s\033[0m\n' "$disp"
 printf '  %s\n' "$(printf '─%.0s' {1..62})"
 
 "$bin" --root "$cwd" --only-roots --no-external --json >"$out" 2>/dev/null &
-scan=$!
-i=0
-while kill -0 "$scan" 2>/dev/null; do
-  printf '\r  \033[2m%s scanning…\033[0m' "${frames[$((i % 8))]}"
-  i=$((i + 1))
-  sleep 0.08
-done
-wait "$scan"
-printf '\r\033[K'
+spin $! "scanning…"
 
 summary=$(python3 "$HERDR_PLUGIN_ROOT/herdr/here.py" "$cwd" <"$out")
 printf '%s\n' "$summary"
@@ -88,7 +94,38 @@ case "$reply" in
     ;;
 esac
 
+# Piping the CLI's own report through `tail` here looked like a different
+# program had taken over the popup: absolute paths, a stray "largest:" header and
+# a rule. Parse the JSON and say the one thing the user wants confirmed instead.
 printf '\n'
-"$bin" --apply --root "$cwd" --only-roots --no-external 2>&1 | tail -4
+"$bin" --apply --root "$cwd" --only-roots --no-external --json >"$out" 2>/dev/null &
+spin $! "reclaiming…"
+
+python3 - "$out" <<'RESULT'
+import json, sys
+
+with open(sys.argv[1]) as fh:
+    try:
+        d = json.load(fh)
+    except (json.JSONDecodeError, ValueError):
+        print("  Something went wrong; nothing was confirmed deleted.")
+        raise SystemExit(0)
+
+
+def human(n):
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or unit == "TB":
+            return f"{n}B" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024
+
+
+freed = d.get("total_deleted_bytes") or 0
+before, after = d.get("free_bytes_before"), d.get("free_bytes_after")
+
+print(f"  \033[1;32m✓\033[0m Reclaimed \033[1m{human(freed)}\033[0m")
+if before and after and after > before:
+    print(f"    \033[2mfree on disk  {human(before)} → {human(after)}\033[0m")
+RESULT
+
 echo
 read -rsn1 -p "  Press any key to close. "

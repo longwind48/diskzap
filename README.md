@@ -187,6 +187,11 @@ Two surfaces:
 
 The popup is scoped from herdr's `focused_pane_cwd`, so it answers "is this worktree worth cleaning" without leaving what you're doing. It runs with `--only-roots`, which is what makes it a glance rather than a wait: a full report sizes every global cache first, measured at **69s** on one machine against **0.85s** scoped to a single project.
 
+<p align="center">
+  <img src="assets/herdr-popup.gif" alt="the diskzap popup in herdr: 452MB across 5 items, reclaimed on y" width="900">
+  <br/><sub><code>prefix+shift+z</code> in a project with five kinds of build output — recorded in a live herdr session.</sub>
+</p>
+
 This install builds from source, so it needs `cargo` on your `PATH`. To also sweep build artifacts, list one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it reports package caches and Docker only, and never walks a directory you didn't name.
 
 </details>
