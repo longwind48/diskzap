@@ -1,6 +1,6 @@
 id = "longwind48.diskzap"
 name = "diskzap"
-version = "0.1.0"
+version = "0.2.0"
 min_herdr_version = "0.7.0"
 description = "Report and reclaim regenerable cache & build files. Reports first, deletes only on an explicit y."
 platforms = ["linux", "macos"]
