@@ -18,45 +18,51 @@ Reclaim your disk. Delete nothing you'll miss.
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> ·
+  <a href="#the-problem">The problem</a> ·
+  <a href="#try-it">Try it</a> ·
   <a href="#install">Install</a> ·
-  <a href="#agents-made-this-worse">Agents &amp; worktrees</a> ·
   <a href="#what-it-cleans">What it cleans</a> ·
   <a href="#safety">Safety</a> ·
-  <a href="#how-it-compares">How it compares</a> ·
-  <a href="#why-not-just-du">Why not <code>du</code>?</a> ·
-  <a href="#run-it-weekly">Run it weekly</a> ·
+  <a href="#how-it-compares">vs kondo</a> ·
   <a href="SECURITY.md">Security</a>
+</p>
+
+<p align="center">
+  <strong>88 KB of source · 168 MB of <code>target/</code> per worktree · ~1 GB per afternoon</strong><br>
+  <sub>Measured on this repo, across the six worktrees that closed its last four issues. Parallel agentic work multiplies build output, and none of it is data. <a href="#the-problem">How that adds up</a>.</sub>
 </p>
 
 ---
 
 ## The problem
 
-**"Your disk is almost full."** `ENOSPC` mid-build. An install that dies at 97%.
+Hand an agent several issues and it gives each one a `git worktree` — isolated branches, parallel builds, the right call. Each one also gets its own `target/`, `node_modules/`, `.venv/`, **all at the same time**.
 
-So you go hunting — delete some downloads, empty the trash, buy back 2 GB, full
-again next week. The real culprit is invisible: **package caches and build
-artifacts.**
+This repo is near the floor for a real Rust project: 2,162 lines, two dependencies, 88 KB of source. One worktree's `target/` is **168 MB**. Six is a gigabyte. A real app with two hundred dependencies is several GB *per worktree*.
 
-| | Typical size | Source |
-|---|---|---|
-| One `node_modules` | **340 MB** median (720 MB at p75) | [measured across npm projects, 2026](https://enterno.io/en/s/research-npm-dependencies-median-2026) |
-| 10–20 projects' worth | 5–15 GB | [reported range](https://www.cluttered.dev/blog/delete-node-modules) |
-| Docker, left unpruned | tens of GB | [reported range](https://khides.com/en/blog/developer-disk-cleanup/) |
-| One agent's parallel worktrees | **168 MB each**, all at once | [measured on this repo](#agents-made-this-worse) |
-| A neglected package cache | **340 GB** | this tool exists because of one |
+Worktrees clean up when the work lands, so this isn't litter — it's **concurrent peak**. You need the headroom exactly while several builds are running, which is when `ENOSPC` kills the whole batch instead of one command you were watching.
 
-That last row is real, not hypothetical — package managers rarely evict anything,
-so a cache pinned to `@latest` keeps every version it ever downloaded.
+**None of it is data.** Every byte regenerates: `npm install` re-downloads it, `cargo build` remakes it. It's the safest space on your disk to delete and usually the largest.
 
-**None of it is data.** Every byte regenerates: `npm install` re-downloads it,
-`cargo build` remakes it. It's the safest space on your disk to delete and usually
-the largest — people leave it because `rm -rf` with a glob at 2am is a bad idea
-and telling cache from work is genuinely hard.
+<details>
+<summary>The same problem without agents — still true, just slower</summary>
 
-diskzap draws that line for you, shows the number first, and deletes nothing
-until you say so.
+| | Typical size |
+|---|---|
+| One `node_modules` | [340 MB median, 720 MB at p75](https://enterno.io/en/s/research-npm-dependencies-median-2026) |
+| Docker, left unpruned | [tens of GB](https://khides.com/en/blog/developer-disk-cleanup/) |
+| A neglected package cache | **340 GB** — this tool exists because of one |
+
+Package managers rarely evict anything, so a cache pinned to `@latest` keeps every version it ever downloaded.
+</details>
+
+## Try it
+
+```
+/diskzap
+```
+
+That's the whole interface. It reports what it found, waits for your OK, then reclaims it:
 
 <p align="center">
   <img src="demo/demo.gif" alt="diskzap in action" width="900">
@@ -64,98 +70,29 @@ until you say so.
   Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
 </p>
 
-### Agents made this worse
+Narrow or widen it in the same breath — `/diskzap ~/projects`, or `/diskzap just tell me what's reclaimable`. Saying "I'm low on disk space" triggers it too.
 
-Hand an agent several issues and the right move is a `git worktree` per issue —
-isolated branches, no stashing, builds that don't fight each other. Every worktree
-also gets its own `target/`, `node_modules/`, `.venv/`, and they all exist *at the
-same time*.
-
-This repo is close to the floor for a real Rust project: 2,162 lines, two runtime
-dependencies, **88 KB of source**. One worktree's `target/` after a debug and a
-release build is **168 MB** — a ratio of roughly 1,900:1, build output to source.
-Six worktrees in one afternoon, which is an ordinary batch of issues, is **1 GB**.
-An application with two hundred dependencies is several GB per worktree.
-
-The worktrees clean up fine when the work lands; `git worktree remove` takes the
-build output with it. The problem isn't litter, it's **concurrent peak**. Parallel
-agentic work needs multiples of the headroom serial work needed, and it needs that
-headroom precisely when several builds are running — which is exactly when `ENOSPC`
-costs the most, because it fails the batch rather than one command you were
-watching.
-
-That's the shape of the problem this was built for. The numbers above came from the
-session that added the last four cache targets to this tool.
-
-### It's a harness, not a prompt
-
-So the agent that filled the disk is also the one you'd ask to empty it, which is
-the part worth being careful about.
-
-Ask an agent to free up disk space and it will improvise `rm -rf` from a bash
-tool. That works right up until it doesn't: bash hands the harness an opaque
-command string, so nothing can inspect what's about to be deleted or stop it. The
-blast radius of a wrong guess is worst in exactly the setup above — a tree of
-worktrees where `target/` is disposable, the branch you haven't pushed is not, and
-they sit two directories apart.
-
-diskzap replaces that with a **dedicated, gated tool**. Deletion becomes a typed
-action the harness can intercept and audit instead of a shell string it has to
-trust:
-
-- **Bounded** — deletes only paths resolved from an explicit catalog
-  ([`src/targets.rs`](src/targets.rs)). No arbitrary-path delete exists in the code,
-  so no prompt can talk it into one.
-- **Refuses on doubt** — `/`, `$HOME`, symlink escapes and caches held by a live
-  lockfile are declined. [`src/safety.rs`](src/safety.rs) is 184 readable lines;
-  [30 tests](#tests) prove it against a real filesystem.
-- **Dry-run by default** — reports first, deletes only on `--apply`, so a
-  scheduled run can't surprise you.
-- **Scanning chosen by measurement, not vibes** — 200k files in 609 ms, faster
-  than every Rust/Go disk-usage tool it was [benchmarked](#why-not-just-du) against.
-- **Offline** — no network code, no telemetry, two dependencies (`serde`,
-  `serde_json`). [SECURITY.md](SECURITY.md) has the threat model.
-
-## Quick start
-
-**1. Install it** into whichever coding assistants you use:
-
-```bash
-npx skills add longwind48/diskzap
-```
-
-**2. Call it.** No flags to learn:
-
-```
-/diskzap
-```
-
-It reports what it found, waits for your OK, then reclaims it. You can add
-context in the same breath — `/diskzap ~/projects` or `/diskzap just tell me
-what's reclaimable` — or skip the slash entirely and say "I'm low on disk space",
-which triggers it too.
-
-**3. Make it automatic.** Wrap that call in a weekly loop and stop thinking about
-disk space:
+Put it on a schedule and stop thinking about disk:
 
 ```
 /loop 7d /diskzap
 ```
 
-That's Claude Code's `/loop`; other assistants have their own scheduling verb.
-The skill handles the rest — it dry-runs first and age-gates so the project
-you're actively building never disappears from under you.
+It dry-runs first and age-gates, so the project you're actively building never disappears from under you.
 
 <details>
-<summary><b>Prefer the raw CLI?</b> It's a normal binary — no assistant needed.</summary>
+<summary><b>Why it's safe to let an agent run this</b> — deletion is a gated tool, not a shell string</summary>
 
-```bash
-diskzap --root ~/projects            # report; deletes nothing
-diskzap --apply --root ~/projects    # reclaim it
-```
+Ask an agent to free up disk space and it will improvise `rm -rf` from a bash tool. Bash hands the harness an opaque command string, so nothing can inspect what's about to be deleted or stop it — and the blast radius is worst in exactly the setup above, a tree of worktrees where `target/` is disposable and the branch you haven't pushed is not.
 
-See [All the flags](#all-the-flags) and [Install](#install) for building from
-source.
+diskzap makes deletion a typed action the harness can intercept and audit:
+
+- **Bounded** — only paths resolved from an explicit catalog ([`src/targets.rs`](src/targets.rs)). No arbitrary-path delete exists in the code, so no prompt can talk it into one.
+- **Refuses on doubt** — `/`, `$HOME`, symlink escapes, and caches held by a live lockfile are all declined.
+- **Dry-run by default** — `--apply` is the only way anything is removed, so a scheduled run can't surprise you.
+- **Offline** — no network code, no telemetry, two dependencies (`serde`, `serde_json`).
+
+[`src/safety.rs`](src/safety.rs) is 184 readable lines and the integration suite asserts every rule against a real filesystem. [SECURITY.md](SECURITY.md) has the threat model.
 </details>
 
 ## Install
@@ -171,7 +108,9 @@ npx skills add longwind48/diskzap --agent '*' -y      # every agent it finds
 npx skills add longwind48/diskzap -a codex -a cursor  # or name them
 ```
 
-### Using [herdr](https://herdr.dev)?
+<details>
+<summary><b>Using herdr?</b> — the report gets its own pane</summary>
+
 
 It's also a herdr plugin, so the report gets a pane instead of a scrollback dump:
 
@@ -207,6 +146,9 @@ Otherwise grab a release build — no toolchain needed. Every asset ships with a
 `.sha256` beside it:
 
 ```bash
+
+</details>
+
 # macOS (Apple silicon); swap for x86_64-apple-darwin or x86_64-unknown-linux-gnu
 curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz
 curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz.sha256
@@ -227,7 +169,9 @@ Put the binary on your `PATH` to use the short commands above. No Rust toolchain
 and no release for your platform? There's a pure-shell fallback with the same
 targets in [`references/fallback.md`](references/fallback.md).
 
-### Platform support
+<details>
+<summary><b>Platform support</b> — macOS, Linux, and why Windows needs WSL</summary>
+
 
 | Environment | Works? |
 |---|---|
@@ -249,7 +193,11 @@ is a welcome contribution — it needs a `USERPROFILE` fallback in `src/main.rs`
 `%LOCALAPPDATA%` entries in `src/targets.rs`, and `windows-latest` added to the
 CI matrix.
 
-## All the flags
+</details>
+
+<details>
+<summary><b>All the flags</b> — the full CLI surface</summary>
+
 
 ```bash
 diskzap                        # package caches + docker only (no --root)
@@ -259,6 +207,8 @@ diskzap --min-age-days 14      # skip anything used in the last 14 days
 diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
 diskzap --json                 # machine-readable output
 ```
+
+</details>
 
 ## What it cleans
 
@@ -340,7 +290,9 @@ So the split is roughly: **kondo for a manual sweep across many languages,
 diskzap for an unattended one that also gets the package caches and Docker** —
 which on most laptops are the bigger numbers anyway.
 
-## Run it weekly
+<details>
+<summary><b>Running it on a schedule</b> — plain cron, and why it is safe to automate</summary>
+
 
 Scheduling is where this earns its keep: you stop discovering the problem at the
 moment a build dies. [Quick start step 3](#quick-start) shows the one-liner —
@@ -362,18 +314,33 @@ directly — Mondays at 9am, age-gated to two weeks:
 
 Drop `--apply` if you'd rather be told the number and decide for yourself.
 
-## Tests
+</details>
+
+<details>
+<summary><b>Tests</b> — what the integration suite actually asserts</summary>
+
 
 ```bash
-cargo test    # 30 tests: 18 unit guardrails + 12 integration
+cargo test
 ```
 
-The integration suite builds a real temporary home and asserts on the
-filesystem afterward — that dry-run leaves every byte in place, that `--apply`
-removes exactly what it reported, that a locked cache survives, that OS caches
-stay off without the flag, and that artifacts need a `--root`.
+Unit tests cover the catalog guardrails — that an ambiguous directory name needs
+its marker file, that `pnpm`/`bun`/`maven` entries can never widen to the parent
+that holds a binary or credentials.
 
-## Why not just `du`?
+The integration suite builds a real temporary home and asserts on the filesystem
+afterward: that dry-run leaves every byte in place, that `--apply` removes exactly
+what it reported, that a locked cache survives, that OS caches stay off without
+the flag, and that artifacts need a `--root`.
+
+<sub>No count here on purpose — it went stale twice in one week. `cargo test`
+prints the real number.</sub>
+
+</details>
+
+<details>
+<summary><b>Why not just <code>du</code>?</b> — and the scan benchmark</summary>
+
 
 Because sizing is one step of the job, not the job. diskzap resolves a catalog
 of cache targets, runs each through the safety guards (protected-path,
@@ -395,7 +362,11 @@ Within 1.5× of C `du`, and faster than the Rust/Go disk-usage tools. A parallel
 walk was tried and measured 4.7× *slower* — see [`src/scan.rs`](src/scan.rs)
 before you re-add threads.
 
-## Trust note
+</details>
+
+<details>
+<summary><b>Trust note</b> — what you are running, and what the checksums do not prove</summary>
+
 
 `npx skills add` fetches and runs code from this repo. Before installing
 anything that can delete files, skim the source — it's deliberately small
@@ -410,6 +381,8 @@ produced by [`release.yml`](.github/workflows/release.yml) on GitHub's runners
 from the tagged commit. The `.sha256` beside each asset proves the download
 matches what was uploaded, not that the upload matches the source. If that
 distinction matters to you, build from source — it takes about four seconds.
+
+</details>
 
 ## Contributing
 
