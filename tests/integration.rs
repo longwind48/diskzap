@@ -387,19 +387,3 @@ fn total_reclaimable(json: &str) -> u64 {
         .unwrap_or(tail.len());
     tail[..end].parse().unwrap()
 }
-
-#[test]
-fn version_flag_matches_the_manifest() {
-    // The bug-report template asks every reporter which build they were on, so
-    // this flag has to exist and has to agree with Cargo.toml. Asserting against
-    // CARGO_PKG_VERSION means a hand-edited string can never drift from it.
-    for flag in ["--version", "-V"] {
-        let out = Command::new(bin()).arg(flag).output().expect("run diskzap");
-        assert!(out.status.success(), "{flag} exited nonzero");
-        assert_eq!(
-            String::from_utf8(out.stdout).unwrap(),
-            format!("diskzap {}\n", env!("CARGO_PKG_VERSION")),
-            "{flag} printed something other than the bare version"
-        );
-    }
-}

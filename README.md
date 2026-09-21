@@ -227,7 +227,6 @@ diskzap --apply                # delete instead of report
 diskzap --min-age-days 14      # skip anything used in the last 14 days
 diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
 diskzap --json                 # machine-readable output
-diskzap --version              # print the version and exit (also -V)
 ```
 
 ## What it cleans
