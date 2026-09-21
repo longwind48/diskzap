@@ -168,18 +168,24 @@ Put the binary on your `PATH`. No Rust toolchain and no release for your platfor
 
 ```bash
 herdr plugin install longwind48/diskzap
-herdr plugin pane open --plugin longwind48.diskzap --entrypoint report
+herdr plugin action invoke longwind48.diskzap.setup-keys
 ```
 
-The pane reports first and deletes only if you answer `y`. Bind it to a key by pointing at the action:
+That registers `prefix+shift+z` and reloads the server. It backs up `config.toml` first and is a no-op if the binding already exists. To pick a different key, or to see what it would change before it changes anything, run the script directly from the checkout — it prints the block and exits unless given `--yes`:
 
-```toml
-[[keys.command]]
-key = "prefix+k"
-type = "plugin_action"
-command = "longwind48.diskzap.report"
-description = "reclaimable space"
+```bash
+DISKZAP_HERDR_KEY=prefix+shift+f bash install.sh        # dry run
+DISKZAP_HERDR_KEY=prefix+shift+f bash install.sh --yes  # apply
 ```
+
+Two surfaces:
+
+| | What it does |
+|---|---|
+| `prefix+shift+z` | A small popup: what's reclaimable **under the directory you're looking at**. Read-only — it can't delete. |
+| `herdr plugin pane open --plugin longwind48.diskzap --entrypoint report` | The full report as an overlay, prompting to delete on `y`. |
+
+The popup is scoped from herdr's `focused_pane_cwd`, so it answers "is this worktree worth cleaning" without leaving what you're doing. It deliberately cannot apply: a glance you summon with one keystroke shouldn't be one keystroke from deleting a build you're still using.
 
 This install builds from source, so it needs `cargo` on your `PATH`. To also sweep build artifacts, list one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it reports package caches and Docker only, and never walks a directory you didn't name.
 
