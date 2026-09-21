@@ -193,6 +193,17 @@ pub fn catalog() -> Vec<Target> {
             kind: HomeDirs(&[".gradle/caches"]),
         },
         Target {
+            id: "maven",
+            tier: PackageCache,
+            // Only the repository subdir. ~/.m2 also holds settings.xml, which
+            // carries mirrors, proxies and server credentials — config a rebuild
+            // cannot regenerate. <localRepository> can relocate this; reading
+            // settings.xml is skipped, so a relocated repo reports absent rather
+            // than resolving to a guess.
+            regenerates: "re-downloaded on next `mvn` build; locally `mvn install`ed artifacts need their own rebuild",
+            kind: HomeDirs(&[".m2/repository"]),
+        },
+        Target {
             id: "huggingface",
             tier: PackageCache,
             regenerates: "re-downloaded from the HF hub on next use",
@@ -413,6 +424,25 @@ mod tests {
         assert!(!Tier::VmDisk.default_on());
         assert!(Tier::PackageCache.default_on());
         assert!(!Tier::OsCache.default_on());
+    }
+
+    #[test]
+    fn maven_never_targets_dot_m2_itself() {
+        // ~/.m2/settings.xml carries mirrors, proxies and server credentials.
+        // No rebuild regenerates that, so only the repository subdir is a cache.
+        let cat = catalog();
+        let t = cat.iter().find(|t| t.id == "maven").unwrap();
+        match t.kind {
+            Kind::HomeDirs(paths) => {
+                for p in paths {
+                    assert!(
+                        p.ends_with("repository"),
+                        "~/.m2 holds settings.xml; only the repository is a cache, got {p}"
+                    );
+                }
+            }
+            _ => panic!("maven should be HomeDirs"),
+        }
     }
 
     #[test]

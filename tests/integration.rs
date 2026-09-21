@@ -411,3 +411,26 @@ fn bun_install_cache_is_found_and_bun_home_survives() {
 
     fs::remove_dir_all(&home).ok();
 }
+
+#[test]
+fn maven_repository_is_found_and_settings_xml_survives() {
+    // settings.xml is config, not cache: it holds mirrors, proxies and server
+    // credentials that no `mvn` build brings back. Only the repository goes.
+    let home = scratch("maven");
+    let repo = home.join(".m2/repository/org/springframework/spring-core/6.1.0");
+    write_file(&repo.join("spring-core-6.1.0.jar"), 4096);
+    write_file(&home.join(".m2/settings.xml"), 256);
+
+    let json = run(&home, &["--apply", "--no-external"]);
+    assert!(json.contains("\"id\": \"maven\""), "maven not reported");
+    assert!(
+        !home.join(".m2/repository").exists(),
+        "--apply should have removed the local repository"
+    );
+    assert!(
+        home.join(".m2/settings.xml").exists(),
+        "settings.xml is config and must survive"
+    );
+
+    fs::remove_dir_all(&home).ok();
+}

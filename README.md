@@ -237,7 +237,7 @@ about a deletable thing, so it's short and auditable on purpose.
 
 | Tier | Targets | Default |
 |---|---|---|
-| **Package caches** | uv · pip · npm · yarn · pnpm · bun · cargo · go · gradle · huggingface | ✅ on |
+| **Package caches** | uv · pip · npm · yarn · pnpm · bun · cargo · go · gradle · maven · huggingface | ✅ on |
 | **Build artifacts** | `node_modules` · `.venv` · `.next` · `target` · `__pycache__` | ✅ on, needs `--root` |
 | **Docker** | dangling images + build cache (via `docker system prune -f`) | ✅ on |
 | **OS / app caches** | `~/Library/Caches` | ⛔ opt-in |
