@@ -1,7 +1,7 @@
 <div align="center"><pre>
-▄▀▀ ▄▀▄ ▄▀▀ █ █ █▀▀ █ █ █ █▀▄ █▀▀
-█   █▀█ █   █▀█ █▀▀ █▄█ █ █▀  █▀▀
-▀▄▄ ▀ ▀ ▀▄▄ ▀ ▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀
+█▀▄ █ ▄▀▀ █ █ ▀▀▀ ▄▀▄ █▀▄
+█ █ █ ▀▀▄ █▀▄ ▄▀  █▀█ █▀
+▀▀  ▀ ▀▄▄ ▀ ▀ ▀▀▀ ▀ ▀ ▀
 
 Reclaim your disk. Delete nothing you'll miss.
 </pre></div>
@@ -9,7 +9,7 @@ Reclaim your disk. Delete nothing you'll miss.
 <p align="center"><strong>Rust CLI · agent skill · dry-run by default · allowlist-only deletion · lock-aware · safe in a loop</strong></p>
 
 <p align="center">
-  <a href="https://github.com/longwind48/cachewipe/actions/workflows/ci.yml"><img src="https://github.com/longwind48/cachewipe/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/longwind48/diskzap/actions/workflows/ci.yml"><img src="https://github.com/longwind48/diskzap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="#safety"><img src="https://img.shields.io/badge/deletes-only%20on%20--apply-brightgreen.svg" alt="Dry-run by default"></a>
   <img src="https://img.shields.io/badge/rust-stable-orange.svg" alt="Rust stable">
@@ -52,12 +52,12 @@ so a cache pinned to `@latest` keeps every version it ever downloaded.
 the largest — people leave it because `rm -rf` with a glob at 2am is a bad idea
 and telling cache from work is genuinely hard.
 
-cachewipe draws that line for you, shows the number first, and deletes nothing
+diskzap draws that line for you, shows the number first, and deletes nothing
 until you say so.
 
 <p align="center">
-  <img src="demo/demo.gif" alt="cachewipe in action" width="900">
-  <br/><sub>Dry-run reports 5.0 GB across 9 caches — then <code>--apply</code> reclaims it.<br/>
+  <img src="demo/demo.gif" alt="diskzap in action" width="900">
+  <br/><sub>Dry-run reports 4.4 GB across 8 caches — then <code>--apply</code> reclaims it.<br/>
   Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
 </p>
 
@@ -67,7 +67,7 @@ Ask an agent to free up disk space and it will improvise `rm -rf` from a bash
 tool. That works right up until it doesn't: bash hands the harness an opaque
 command string, so nothing can inspect what's about to be deleted or stop it.
 
-cachewipe replaces that with a **dedicated, gated tool**. Deletion becomes a typed
+diskzap replaces that with a **dedicated, gated tool**. Deletion becomes a typed
 action the harness can intercept and audit instead of a shell string it has to
 trust:
 
@@ -76,7 +76,7 @@ trust:
   so no prompt can talk it into one.
 - **Refuses on doubt** — `/`, `$HOME`, symlink escapes and caches held by a live
   lockfile are declined. [`src/safety.rs`](src/safety.rs) is 184 readable lines;
-  [15 tests](#tests) prove it against a real filesystem.
+  [30 tests](#tests) prove it against a real filesystem.
 - **Dry-run by default** — reports first, deletes only on `--apply`, so a
   scheduled run can't surprise you.
 - **Scanning chosen by measurement, not vibes** — 200k files in 609 ms, faster
@@ -89,17 +89,17 @@ trust:
 **1. Install it** into whichever coding assistants you use:
 
 ```bash
-npx skills add longwind48/cachewipe
+npx skills add longwind48/diskzap
 ```
 
 **2. Call it.** No flags to learn:
 
 ```
-/cachewipe
+/diskzap
 ```
 
 It reports what it found, waits for your OK, then reclaims it. You can add
-context in the same breath — `/cachewipe ~/projects` or `/cachewipe just tell me
+context in the same breath — `/diskzap ~/projects` or `/diskzap just tell me
 what's reclaimable` — or skip the slash entirely and say "I'm low on disk space",
 which triggers it too.
 
@@ -107,7 +107,7 @@ which triggers it too.
 disk space:
 
 ```
-/loop 7d /cachewipe
+/loop 7d /diskzap
 ```
 
 That's Claude Code's `/loop`; other assistants have their own scheduling verb.
@@ -118,8 +118,8 @@ you're actively building never disappears from under you.
 <summary><b>Prefer the raw CLI?</b> It's a normal binary — no assistant needed.</summary>
 
 ```bash
-cachewipe --root ~/projects            # report; deletes nothing
-cachewipe --apply --root ~/projects    # reclaim it
+diskzap --root ~/projects            # report; deletes nothing
+diskzap --apply --root ~/projects    # reclaim it
 ```
 
 See [All the flags](#all-the-flags) and [Install](#install) for building from
@@ -128,15 +128,15 @@ source.
 
 ## Install
 
-`npx skills add longwind48/cachewipe` detects whichever coding assistants you
+`npx skills add longwind48/diskzap` detects whichever coding assistants you
 have and asks where to install. It isn't tied to one vendor —
 [`npx skills`](https://github.com/vercel-labs/skills) supports Claude Code,
 Codex, Cursor, Zed, Warp, Cline, Continue, Crush, OpenClaw, Amp, Replit and dozens
 more. To skip the prompt:
 
 ```bash
-npx skills add longwind48/cachewipe --agent '*' -y      # every agent it finds
-npx skills add longwind48/cachewipe -a codex -a cursor  # or name them
+npx skills add longwind48/diskzap --agent '*' -y      # every agent it finds
+npx skills add longwind48/diskzap -a codex -a cursor  # or name them
 ```
 
 ### Using [herdr](https://herdr.dev)?
@@ -144,8 +144,8 @@ npx skills add longwind48/cachewipe -a codex -a cursor  # or name them
 It's also a herdr plugin, so the report gets a pane instead of a scrollback dump:
 
 ```bash
-herdr plugin install longwind48/cachewipe
-herdr plugin pane open --plugin longwind48.cachewipe --entrypoint report
+herdr plugin install longwind48/diskzap
+herdr plugin pane open --plugin longwind48.diskzap --entrypoint report
 ```
 
 The pane reports first and deletes only if you answer `y`. Bind it to a key by
@@ -155,25 +155,25 @@ pointing at the action:
 [[keys.command]]
 key = "prefix+k"
 type = "plugin_action"
-command = "longwind48.cachewipe.report"
+command = "longwind48.diskzap.report"
 description = "reclaimable space"
 ```
 
 Install builds from source, so it needs `cargo` on your `PATH`. To also sweep
 build artifacts, list one project dir per line in
-`$(herdr plugin config-dir longwind48.cachewipe)/roots` — with no such file it
+`$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it
 reports package caches and Docker only, and never walks a directory you didn't
 name.
 
 **Just want the binary, no assistant?** It's a plain CLI:
 
 ```bash
-git clone https://github.com/longwind48/cachewipe && cd cachewipe
+git clone https://github.com/longwind48/diskzap && cd diskzap
 cargo build --release
-./target/release/cachewipe --help
+./target/release/diskzap --help
 ```
 
-Put `target/release/cachewipe` on your `PATH` to use the short commands above.
+Put `target/release/diskzap` on your `PATH` to use the short commands above.
 No Rust toolchain? There's a pure-shell fallback with the same targets in
 [`references/fallback.md`](references/fallback.md).
 
@@ -187,7 +187,7 @@ No Rust toolchain? There's a pure-shell fallback with the same targets in
 | Windows: PowerShell / cmd.exe natively | ❌ **No** |
 
 **Windows users need WSL.** Being straight about why, rather than implying
-partial support: cachewipe resolves your home directory from `$HOME`, which
+partial support: diskzap resolves your home directory from `$HOME`, which
 Windows doesn't set (it uses `%USERPROFILE%`), so it exits immediately. The cache
 catalog also only contains Unix paths — the Windows equivalents live under
 `%LOCALAPPDATA%` and aren't in it. And CI only builds and tests on Linux and
@@ -202,18 +202,18 @@ CI matrix.
 ## All the flags
 
 ```bash
-cachewipe                        # package caches + docker only (no --root)
-cachewipe --root <dir>           # also scan <dir> for build artifacts; repeatable
-cachewipe --apply                # delete instead of report
-cachewipe --min-age-days 14      # skip anything used in the last 14 days
-cachewipe --include-os-caches    # opt in to ~/Library/Caches (off by default)
-cachewipe --json                 # machine-readable output
+diskzap                        # package caches + docker only (no --root)
+diskzap --root <dir>           # also scan <dir> for build artifacts; repeatable
+diskzap --apply                # delete instead of report
+diskzap --min-age-days 14      # skip anything used in the last 14 days
+diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
+diskzap --json                 # machine-readable output
 ```
 
 ## What it cleans
 
 Everything here regenerates. The full catalog lives in
-[`src/targets.rs`](src/targets.rs) — that file is the only way cachewipe learns
+[`src/targets.rs`](src/targets.rs) — that file is the only way diskzap learns
 about a deletable thing, so it's short and auditable on purpose.
 
 | Tier | Targets | Default |
@@ -223,7 +223,7 @@ about a deletable thing, so it's short and auditable on purpose.
 | **Docker** | dangling images + build cache (via `docker system prune -f`) | ✅ on |
 | **OS / app caches** | `~/Library/Caches` | ⛔ opt-in |
 
-Build artifacts are only scanned under a `--root` you name, so cachewipe never
+Build artifacts are only scanned under a `--root` you name, so diskzap never
 walks your home directory uninvited. OS caches are off by default because
 "regenerable" isn't guaranteed for every app that writes there.
 
@@ -248,7 +248,7 @@ comparing against are [kondo](https://github.com/tbillington/kondo) (2.4k),
 [npkill](https://github.com/voidcosmos/npkill) (9.5k) and
 [dust](https://github.com/bootandy/dust) (12.3k).
 
-| | cachewipe | kondo | npkill | dust |
+| | diskzap | kondo | npkill | dust |
 |---|---|---|---|---|
 | Project build artifacts | 5 types | **20+ types** | `node_modules` only | — |
 | Global package caches (uv, pip, npm, cargo, go, gradle…) | ✅ | — | — | — |
@@ -272,14 +272,14 @@ count. kondo's own README opens its usage section with:
 
 That is an honest and reasonable thing for an interactive tool to say — a human
 reads the list and decides. It is also precisely what you cannot hand to a
-scheduler or an AI agent, because there is nobody at the prompt. cachewipe is
+scheduler or an AI agent, because there is nobody at the prompt. diskzap is
 built for the case where nothing is watching: no arbitrary-path delete exists in
 the code, every path resolves from [`src/targets.rs`](src/targets.rs), dry-run is
 the default rather than a flag, and `/`, `$HOME` and symlink escapes are refused
 by [`src/safety.rs`](src/safety.rs) instead of by the operator's attention.
 
 So the split is roughly: **kondo for a manual sweep across many languages,
-cachewipe for an unattended one that also gets the package caches and Docker** —
+diskzap for an unattended one that also gets the package caches and Docker** —
 which on most laptops are the bigger numbers anyway.
 
 ## Run it weekly
@@ -299,7 +299,7 @@ follows the intent you state.
 directly — Mondays at 9am, age-gated to two weeks:
 
 ```bash
-(crontab -l 2>/dev/null; echo "0 9 * * 1 $HOME/.cargo/bin/cachewipe --apply --min-age-days 14 --root $HOME/projects") | crontab -
+(crontab -l 2>/dev/null; echo "0 9 * * 1 $HOME/.cargo/bin/diskzap --apply --min-age-days 14 --root $HOME/projects") | crontab -
 ```
 
 Drop `--apply` if you'd rather be told the number and decide for yourself.
@@ -307,7 +307,7 @@ Drop `--apply` if you'd rather be told the number and decide for yourself.
 ## Tests
 
 ```bash
-cargo test    # 15 tests: 10 unit guardrails + 5 integration
+cargo test    # 30 tests: 18 unit guardrails + 12 integration
 ```
 
 The integration suite builds a real temporary home and asserts on the
@@ -317,7 +317,7 @@ stay off without the flag, and that artifacts need a `--root`.
 
 ## Why not just `du`?
 
-Because sizing is one step of the job, not the job. cachewipe resolves a catalog
+Because sizing is one step of the job, not the job. diskzap resolves a catalog
 of cache targets, runs each through the safety guards (protected-path,
 symlink-confinement, lock detection), sizes it, and — on `--apply` — deletes it.
 `du` only does the sizing, and shelling out to it would split the safety checks
@@ -329,7 +329,7 @@ So sizing stays in-process. And it's fast enough that this costs you nothing —
 200k files (~800 MB), M4 Mac / APFS, `bash bench/bench.sh`
 ([hyperfine](https://github.com/sharkdp/hyperfine), 10 runs):
 
-| `du -sk` | **cachewipe** | `dust` | `diskus` |
+| `du -sk` | **diskzap** | `dust` | `diskus` |
 |---|---|---|---|
 | 408 ms | **609 ms** | 3,961 ms | 5,008 ms |
 
@@ -370,4 +370,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-<p align="center"><sub>If cachewipe got you some disk space back, a ⭐ helps others find it.</sub></p>
+<p align="center"><sub>If diskzap got you some disk space back, a ⭐ helps others find it.</sub></p>

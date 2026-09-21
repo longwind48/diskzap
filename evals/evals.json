@@ -1,5 +1,5 @@
 {
-  "skill_name": "cachewipe",
+  "skill_name": "diskzap",
   "notes": "Runs against a disposable fake $HOME built by evals/make-fixture.sh. A sandbox is mandatory rather than cosmetic: eval-1 asks for --apply, and pointing that at the real home would delete the grader's own machine. Pass --no-external on every run \u2014 $HOME confines the path targets but not the delegated cleanups, which are subprocesses that reach the real Docker and Homebrew. The fixture encodes one case per known failure mode.",
   "evals": [
     {

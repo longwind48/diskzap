@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Reproducible sizing benchmark for cachewipe.
+# Reproducible sizing benchmark for diskzap.
 #
-# Compares cachewipe against the disk-usage tools it is fair to compare against:
+# Compares diskzap against the disk-usage tools it is fair to compare against:
 # every tool here walks a tree and stats each file to total its size, which is
-# the work cachewipe does. Name-only walkers (fd, find) are deliberately excluded
+# the work diskzap does. Name-only walkers (fd, find) are deliberately excluded
 # — they never ask the filesystem how big anything is, so beating them proves
 # nothing about sizing.
 #
@@ -14,8 +14,8 @@ set -euo pipefail
 
 FILES=${1:-100}
 DIRS=${2:-2000}
-TREE=${TREE:-/tmp/cachewipe-bench/tree}
-BIN="$(cd "$(dirname "$0")/.." && pwd)/target/release/cachewipe"
+TREE=${TREE:-/tmp/diskzap-bench/tree}
+BIN="$(cd "$(dirname "$0")/.." && pwd)/target/release/diskzap"
 
 command -v hyperfine >/dev/null || { echo "need hyperfine: brew install hyperfine"; exit 1; }
 [ -x "$BIN" ] || { echo "build first: cargo build --release"; exit 1; }
@@ -52,15 +52,15 @@ echo
 echo "== byte totals (must agree) =="
 cw=$(HOME="$TREE/.." "$BIN" --json --root "$TREE" 2>/dev/null \
       | python3 -c 'import json,sys; print(sum(i["files"] for i in json.load(sys.stdin)["items"]))')
-echo "cachewipe files counted: $cw"
+echo "diskzap files counted: $cw"
 echo "find files counted:      $(find "$TREE" -type f | wc -l | tr -d ' ')"
 echo
 
 # --- timings -----------------------------------------------------------------
-# cachewipe sizes a *target*, so point it at the tree via --root. The competitors
+# diskzap sizes a *target*, so point it at the tree via --root. The competitors
 # are given the same directory. 3 warmup runs prime the FS cache for everyone.
 echo "== hyperfine (3 warmups, 10 runs) =="
-# cachewipe sizes whatever its catalog resolves, so give it a HOME whose uv cache
+# diskzap sizes whatever its catalog resolves, so give it a HOME whose uv cache
 # IS the tree. Note: make it a real directory, not a symlink — a symlinked target
 # forces repeated canonicalisation in the safety check and inflates the time ~2.6x,
 # which is a measurement artifact rather than a property of the tool.
@@ -71,14 +71,14 @@ if [ ! -d "$FAKE_HOME/.cache/uv" ]; then
     || cp -R "$TREE" "$FAKE_HOME/.cache/uv"
 fi
 
-CMDS=(-n "cachewipe" "env HOME=$FAKE_HOME $BIN --json")
+CMDS=(-n "diskzap" "env HOME=$FAKE_HOME $BIN --json")
 command -v du       >/dev/null && CMDS+=(-n "du -sk"  "du -sk $TREE")
 command -v diskus   >/dev/null && CMDS+=(-n "diskus"  "diskus $TREE")
 command -v dust     >/dev/null && CMDS+=(-n "dust"    "dust -d0 $TREE")
 command -v gdu-go   >/dev/null && CMDS+=(-n "gdu"     "gdu-go -np $TREE")
 
-hyperfine --warmup 3 --runs 10 --export-markdown /tmp/cachewipe-bench/result.md "${CMDS[@]}"
+hyperfine --warmup 3 --runs 10 --export-markdown /tmp/diskzap-bench/result.md "${CMDS[@]}"
 
 echo
-echo "markdown table written to /tmp/cachewipe-bench/result.md"
+echo "markdown table written to /tmp/diskzap-bench/result.md"
 echo "remove the tree with: rm -rf $(dirname "$TREE")"

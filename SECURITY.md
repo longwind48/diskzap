@@ -1,10 +1,10 @@
 # Security
 
-cachewipe deletes files. It is built to be audited before you trust it.
+diskzap deletes files. It is built to be audited before you trust it.
 
 ## Threat model
 
-The risk is deleting something the user did not intend to lose. cachewipe
+The risk is deleting something the user did not intend to lose. diskzap
 mitigates this structurally:
 
 1. **No arbitrary deletion.** The only paths ever passed to `remove_dir_all`

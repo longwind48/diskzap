@@ -1,5 +1,5 @@
-id = "longwind48.cachewipe"
-name = "cachewipe"
+id = "longwind48.diskzap"
+name = "diskzap"
 version = "0.1.0"
 min_herdr_version = "0.7.0"
 description = "Report and reclaim regenerable cache & build files. Reports first, deletes only on an explicit y."
@@ -14,7 +14,7 @@ command = ["cargo", "build", "--release"]
 # number, then confirm. Placement is an overlay so it restores your layout.
 [[panes]]
 id = "report"
-title = "cachewipe — reclaimable space"
+title = "diskzap — reclaimable space"
 placement = "overlay"
 command = ["bash", "herdr/pane.sh"]
 

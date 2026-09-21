@@ -12,7 +12,7 @@ Set Theme "Catppuccin Mocha"
 Set Padding 18
 Set TypingSpeed 45ms
 
-# --- hidden setup: sandbox HOME + a `cachewipe` shim on PATH ---
+# --- hidden setup: sandbox HOME + a `diskzap` shim on PATH ---
 # Everything here is off-camera so the demo shows only the real commands.
 Hide
 Type "export PS1='$ '" Enter
@@ -28,7 +28,7 @@ Show
 Sleep 800ms
 
 # 1. Dry-run — reports what it would free, deletes nothing.
-Type "cachewipe --root ~/projects" Sleep 500ms Enter
+Type "diskzap --root ~/projects" Sleep 500ms Enter
 Sleep 5s
 
 # 2. Apply — actually reclaims the space. Clear first so the payoff is readable.
@@ -36,5 +36,5 @@ Hide
 Type "clear" Enter
 Show
 Sleep 400ms
-Type "cachewipe --apply --root ~/projects" Sleep 500ms Enter
+Type "diskzap --apply --root ~/projects" Sleep 500ms Enter
 Sleep 5s

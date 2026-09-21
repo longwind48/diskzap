@@ -1,16 +1,16 @@
 [package]
-name = "cachewipe"
+name = "diskzap"
 version = "0.1.0"
 edition = "2021"
 description = "Fast, safe reclaimer of regenerable cache and build files. Reports by default, deletes only on --apply."
 license = "MIT"
-repository = "https://github.com/longwind48/cachewipe"
+repository = "https://github.com/longwind48/diskzap"
 readme = "README.md"
 keywords = ["cache", "disk", "cleanup", "storage", "prune"]
 categories = ["command-line-utilities", "filesystem"]
 
 [[bin]]
-name = "cachewipe"
+name = "diskzap"
 path = "src/main.rs"
 
 [dependencies]

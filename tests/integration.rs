@@ -13,7 +13,7 @@ use std::process::Command;
 /// name passed in, plus the process id, so parallel tests don't collide.
 fn scratch(tag: &str) -> PathBuf {
     let mut d = std::env::temp_dir();
-    d.push(format!("cachewipe-it-{}-{}", tag, std::process::id()));
+    d.push(format!("diskzap-it-{}-{}", tag, std::process::id()));
     let _ = fs::remove_dir_all(&d);
     fs::create_dir_all(&d).unwrap();
     d
@@ -25,7 +25,7 @@ fn write_file(path: &Path, bytes: usize) {
 }
 
 fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_cachewipe")
+    env!("CARGO_BIN_EXE_diskzap")
 }
 
 fn run(home: &Path, extra: &[&str]) -> String {
@@ -34,7 +34,7 @@ fn run(home: &Path, extra: &[&str]) -> String {
         .arg("--json")
         .args(extra)
         .output()
-        .expect("run cachewipe");
+        .expect("run diskzap");
     assert!(
         out.status.success(),
         "nonzero exit: {}",
@@ -266,7 +266,7 @@ fn warns_when_applying_with_a_redirected_home() {
         .env("USER", "alice")
         .arg("--apply")
         .output()
-        .expect("run cachewipe");
+        .expect("run diskzap");
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(
         stderr.contains("--no-external"),
@@ -279,7 +279,7 @@ fn warns_when_applying_with_a_redirected_home() {
         .env("USER", "alice")
         .args(["--apply", "--no-external"])
         .output()
-        .expect("run cachewipe");
+        .expect("run diskzap");
     assert!(
         !String::from_utf8_lossy(&quiet.stderr).contains("warning:"),
         "no warning once externals are disabled"

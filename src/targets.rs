@@ -1,6 +1,6 @@
-//! The catalog of what cachewipe is willing to touch.
+//! The catalog of what diskzap is willing to touch.
 //!
-//! This module is the trust boundary. Everything cachewipe deletes must be
+//! This module is the trust boundary. Everything diskzap deletes must be
 //! declared here with an explicit regeneration story, so a reader can audit
 //! exactly what the tool will ever remove. There is no "delete an arbitrary
 //! path" code path anywhere else — deletion only ever operates on paths that
@@ -111,7 +111,7 @@ pub struct Target {
     pub kind: Kind,
 }
 
-/// The full catalog. Adding an entry here is the ONLY way to make cachewipe
+/// The full catalog. Adding an entry here is the ONLY way to make diskzap
 /// aware of a new deletable thing — keep it auditable.
 ///
 /// Deliberately absent: site-specific and corporate-internal caches. They can

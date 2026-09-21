@@ -1,5 +1,5 @@
 ---
-name: cachewipe
+name: diskzap
 description: >-
   Reclaim disk space by removing regenerable cache and build files — uv/pip/npm/pnpm/cargo/go
   package caches, node_modules/.venv/target/.next build artifacts, stale browser-driver
@@ -14,7 +14,7 @@ description: >-
   user does not name a specific cache.
 ---
 
-# cachewipe
+# diskzap
 
 A fast Rust tool that finds and removes **regenerable** files — caches and build
 artifacts that a package manager or build command will simply recreate. It never
@@ -29,7 +29,7 @@ just clean it).
 
 ## Invoked with nothing to go on
 
-`/cachewipe` with no arguments is the common case, so handle it without a round
+`/diskzap` with no arguments is the common case, so handle it without a round
 of questions. Package caches need no configuration — scan them immediately. Build
 artifacts need a `--root`, so infer one rather than asking: if the current
 directory is inside a git repo or a projects tree, use that; otherwise check for
@@ -46,12 +46,12 @@ The tool is a small Rust binary. Build it once; reuse forever. From the skill
 directory:
 
 ```bash
-BIN="$(dirname "$0")/target/release/cachewipe"   # if invoked with a path; else use the skill dir
+BIN="$(dirname "$0")/target/release/diskzap"   # if invoked with a path; else use the skill dir
 # Prefer an already-built binary:
 if [ ! -x "$BIN" ]; then
   if command -v cargo >/dev/null 2>&1; then
-    cargo build --release --manifest-path "<skill-dir>/Cargo.toml" >/tmp/cachewipe-build.log 2>&1 \
-      && echo "built cachewipe" || { echo "build failed — see /tmp/cachewipe-build.log"; }
+    cargo build --release --manifest-path "<skill-dir>/Cargo.toml" >/tmp/diskzap-build.log 2>&1 \
+      && echo "built diskzap" || { echo "build failed — see /tmp/diskzap-build.log"; }
   else
     echo "cargo not found."
   fi
@@ -66,8 +66,8 @@ discipline, just slower and without the lock-safety niceties).
 ## Step 2: Report (dry-run)
 
 ```bash
-cachewipe                            # package caches + delegated cleanups
-cachewipe --root ~/projects          # also scan a projects dir for build artifacts
+diskzap                            # package caches + delegated cleanups
+diskzap --root ~/projects          # also scan a projects dir for build artifacts
 ```
 
 **Read the default (human) output — don't reach for `--json` to summarize.** The
@@ -120,7 +120,7 @@ user the wrong thing.
 ## Step 3: Apply (only when the user is on board)
 
 ```bash
-cachewipe --apply --root ~/projects
+diskzap --apply --root ~/projects
 ```
 
 Two tiers are deliberately excluded from that and need to be asked for:
@@ -155,12 +155,12 @@ but the flag is what actually keeps the run contained.
 ## Running in a /loop
 
 This is the intended recurring-cleanup mode. Because dry-run is the default, a
-loop that runs `cachewipe` reports drift over time and touches nothing — the user
+loop that runs `diskzap` reports drift over time and touches nothing — the user
 reviews and decides when to `--apply`. For hands-off cleanup, the safe recurring
 form is:
 
 ```bash
-cachewipe --apply --min-age-days 14 --root ~/projects
+diskzap --apply --min-age-days 14 --root ~/projects
 ```
 
 `--min-age-days` only deletes cache/artifact dirs whose newest file is older than

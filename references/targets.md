@@ -1,7 +1,7 @@
-# What cachewipe cleans
+# What diskzap cleans
 
 Every target is declared in `src/targets.rs`. This is the complete, auditable
-list — cachewipe cannot delete anything not derived from an entry here.
+list — diskzap cannot delete anything not derived from an entry here.
 
 Where a target lists several paths, all of them are checked and every one that
 exists is reported. That's deliberate: the same tool stores its cache in
@@ -41,7 +41,7 @@ off-limits.
 These accumulate one entire browser per release — 8 Chrome builds and 4 Chromiums
 is a normal state for a machine that runs browser tests. All-or-nothing is the
 wrong operation here: deleting the directory forces a re-download of the version
-in use, so cachewipe reclaims only the stale ones.
+in use, so diskzap reclaims only the stale ones.
 
 Children are grouped by the text before their last `-`, so a mixed directory
 stays correct: `chromium-1187` and `firefox-1490` are different products and each
@@ -60,13 +60,13 @@ version-string dialects these tools use.
 | cargo-target | `target` | `Cargo.toml`, `pom.xml`, `build.gradle`, `build.gradle.kts` | `cargo build` / `mvn package` |
 | pycache | `__pycache__` | — | recompiled on next import |
 
-Scanned only when you pass `--root PATH`, so cachewipe never walks your whole
+Scanned only when you pass `--root PATH`, so diskzap never walks your whole
 home directory unprompted.
 
 `target` is the one name that needs proof. It's Cargo's build directory, but
 `source/` + `target/` is also an everyday data-directory convention in ETL and ML
 repos, and nothing regenerates that. So `target` only matches when a build
-manifest sits next to it. When the manifest is absent cachewipe keeps walking
+manifest sits next to it. When the manifest is absent diskzap keeps walking
 *into* the directory rather than pruning, so a real project nested inside a data
 tree is still found.
 
@@ -85,7 +85,7 @@ anyway.
 | homebrew | `brew cleanup --prune=all` | stale downloads and old installed versions |
 
 Never `docker system prune -a` (would remove tagged images) and never
-`--volumes` (would remove named volumes / data). cachewipe never manipulates
+`--volumes` (would remove named volumes / data). diskzap never manipulates
 these tools' files directly.
 
 **Docker's prune does not shrink the VM disk file.** It frees space *inside* the
@@ -124,7 +124,7 @@ engine, which is a much heavier loss than any package cache. Hence
   `Nonexistent`) is pure waste and the easiest large win on the machine.
 
 Note that `Docker.raw` is a sparse *file*, not a directory, and its apparent
-length is far larger than its allocated size. cachewipe reports allocated blocks,
+length is far larger than its allocated size. diskzap reports allocated blocks,
 which is what the filesystem actually returns.
 
 ## OS / app caches — OFF by default (opt-in)

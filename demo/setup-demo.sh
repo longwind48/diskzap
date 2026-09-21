@@ -1,6 +1,6 @@
 #!/bin/bash
 # Seeds a sandbox HOME with fake caches so demo.tape can record a real
-# cachewipe run without touching anything of the user's.
+# diskzap run without touching anything of the user's.
 # The binary and its logic are real; only the cache contents are synthetic.
 set -eu
 

@@ -1,4 +1,4 @@
-//! cachewipe — fast, safe reclaimer of regenerable cache and build files.
+//! diskzap — fast, safe reclaimer of regenerable cache and build files.
 //!
 //! Reports by default. Deletes only with --apply. The safety-critical decisions
 //! (what may be touched, whether a path is in-bounds, whether it is in use) live
@@ -117,9 +117,9 @@ fn parse_args() -> Result<Config, String> {
 
 fn print_help() {
     println!(
-        "cachewipe — reclaim regenerable cache & build files (safe by default)\n\n\
-         USAGE:\n  cachewipe [--apply] [--json] [--top N] [--include-os-caches]\n            [--include-vm-disks] [--min-age-days N] [--root PATH]...\n\n\
-         By default cachewipe REPORTS what it would free and deletes NOTHING.\n\
+        "diskzap — reclaim regenerable cache & build files (safe by default)\n\n\
+         USAGE:\n  diskzap [--apply] [--json] [--top N] [--include-os-caches]\n            [--include-vm-disks] [--min-age-days N] [--root PATH]...\n\n\
+         By default diskzap REPORTS what it would free and deletes NOTHING.\n\
          Pass --apply to actually delete.\n\n\
          --root PATH           scan a projects dir for build artifacts\n\
          \x20                     (node_modules, .venv, target, .next, __pycache__)\n\
@@ -530,7 +530,7 @@ fn handle_external(
 
 fn print_human(r: &Report, top: usize) {
     println!(
-        "cachewipe {}",
+        "diskzap {}",
         if r.dry_run {
             "(dry-run — nothing deleted)"
         } else {

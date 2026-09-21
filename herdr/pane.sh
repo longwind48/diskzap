@@ -4,18 +4,18 @@
 # is an unbound-variable error.
 set -o pipefail
 
-bin="$HERDR_PLUGIN_ROOT/target/release/cachewipe"
+bin="$HERDR_PLUGIN_ROOT/target/release/diskzap"
 if [[ ! -x "$bin" ]]; then
-  bin="$(command -v cachewipe)"
+  bin="$(command -v diskzap)"
 fi
 if [[ ! -x "$bin" ]]; then
-  echo "cachewipe binary not found." >&2
+  echo "diskzap binary not found." >&2
   echo "Build it: cd $HERDR_PLUGIN_ROOT && cargo build --release" >&2
   read -rsn1 -p "Press any key to close. "
   exit 1
 fi
 
-# Optional scan roots for build artifacts, one path per line. cachewipe never
+# Optional scan roots for build artifacts, one path per line. diskzap never
 # walks a directory you did not name, so with no config this reports package
 # caches and Docker only.
 roots=()
@@ -30,7 +30,7 @@ fi
 "$bin" "${roots[@]}"
 status=$?
 if [[ $status -ne 0 ]]; then
-  read -rsn1 -p "cachewipe exited $status. Press any key to close. "
+  read -rsn1 -p "diskzap exited $status. Press any key to close. "
   exit $status
 fi
 

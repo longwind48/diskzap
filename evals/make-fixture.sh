@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a deterministic fake $HOME for cachewipe evals.
+# Build a deterministic fake $HOME for diskzap evals.
 #
 # Every eval run gets its OWN copy, because --apply mutates the tree. Sizes are
 # small but distinct so "largest first" ordering is meaningful and so a
