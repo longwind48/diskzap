@@ -29,16 +29,16 @@ Example:
 
 Before: a Cargo build dir is reported as reclaimed but survives the delete
 
-1. `cachewipe --root ~/projects`
+1. `diskzap --root ~/projects`
 2. The report lists `~/projects/api/target` at 1.2 GB
-3. `cachewipe --apply --root ~/projects`
+3. `diskzap --apply --root ~/projects`
 4. The summary claims 1.2 GB reclaimed, but `du -sh ~/projects/api/target` still shows 1.2 GB
 
 After: the same run removes it, and the summary matches the disk
 
-1. `cachewipe --root ~/projects`
+1. `diskzap --root ~/projects`
 2. The report lists `~/projects/api/target` at 1.2 GB
-3. `cachewipe --apply --root ~/projects`
+3. `diskzap --apply --root ~/projects`
 4. The summary claims 1.2 GB reclaimed and `~/projects/api/target` is gone
 -->
 

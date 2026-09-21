@@ -28,7 +28,7 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: cachewipe
+          bin: diskzap
           target: ${{ matrix.target }}
           archive: $bin-$target
           checksum: sha256
