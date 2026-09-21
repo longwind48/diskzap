@@ -6,7 +6,7 @@
 Reclaim your disk. Delete nothing you'll miss.
 </pre></div>
 
-<p align="center"><strong>Rust CLI · agent skill · dry-run by default · allowlist-only deletion · lock-aware · safe in a loop</strong></p>
+<p align="center"><strong>Agent skill · Rust CLI · built for parallel worktrees · dry-run by default · allowlist-only deletion · safe in a loop</strong></p>
 
 <p align="center">
   <a href="https://github.com/longwind48/diskzap/actions/workflows/ci.yml"><img src="https://github.com/longwind48/diskzap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -20,6 +20,7 @@ Reclaim your disk. Delete nothing you'll miss.
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#install">Install</a> ·
+  <a href="#agents-made-this-worse">Agents &amp; worktrees</a> ·
   <a href="#what-it-cleans">What it cleans</a> ·
   <a href="#safety">Safety</a> ·
   <a href="#how-it-compares">How it compares</a> ·
@@ -43,6 +44,7 @@ artifacts.**
 | One `node_modules` | **340 MB** median (720 MB at p75) | [measured across npm projects, 2026](https://enterno.io/en/s/research-npm-dependencies-median-2026) |
 | 10–20 projects' worth | 5–15 GB | [reported range](https://www.cluttered.dev/blog/delete-node-modules) |
 | Docker, left unpruned | tens of GB | [reported range](https://khides.com/en/blog/developer-disk-cleanup/) |
+| One agent's parallel worktrees | **168 MB each**, all at once | [measured on this repo](#agents-made-this-worse) |
 | A neglected package cache | **340 GB** | this tool exists because of one |
 
 That last row is real, not hypothetical — package managers rarely evict anything,
@@ -62,11 +64,40 @@ until you say so.
   Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
 </p>
 
+### Agents made this worse
+
+Hand an agent several issues and the right move is a `git worktree` per issue —
+isolated branches, no stashing, builds that don't fight each other. Every worktree
+also gets its own `target/`, `node_modules/`, `.venv/`, and they all exist *at the
+same time*.
+
+This repo is close to the floor for a real Rust project: 2,162 lines, two runtime
+dependencies, **88 KB of source**. One worktree's `target/` after a debug and a
+release build is **168 MB** — a ratio of roughly 1,900:1, build output to source.
+Six worktrees in one afternoon, which is an ordinary batch of issues, is **1 GB**.
+An application with two hundred dependencies is several GB per worktree.
+
+The worktrees clean up fine when the work lands; `git worktree remove` takes the
+build output with it. The problem isn't litter, it's **concurrent peak**. Parallel
+agentic work needs multiples of the headroom serial work needed, and it needs that
+headroom precisely when several builds are running — which is exactly when `ENOSPC`
+costs the most, because it fails the batch rather than one command you were
+watching.
+
+That's the shape of the problem this was built for. The numbers above came from the
+session that added the last four cache targets to this tool.
+
 ### It's a harness, not a prompt
+
+So the agent that filled the disk is also the one you'd ask to empty it, which is
+the part worth being careful about.
 
 Ask an agent to free up disk space and it will improvise `rm -rf` from a bash
 tool. That works right up until it doesn't: bash hands the harness an opaque
-command string, so nothing can inspect what's about to be deleted or stop it.
+command string, so nothing can inspect what's about to be deleted or stop it. The
+blast radius of a wrong guess is worst in exactly the setup above — a tree of
+worktrees where `target/` is disposable, the branch you haven't pushed is not, and
+they sit two directories apart.
 
 diskzap replaces that with a **dedicated, gated tool**. Deletion becomes a typed
 action the harness can intercept and audit instead of a shell string it has to
