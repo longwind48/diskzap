@@ -109,6 +109,12 @@ fn parse_args() -> Result<Config, String> {
                 print_help();
                 std::process::exit(0);
             }
+            // Bare version string, nothing else: a bug report asks which build
+            // you were on, and this is often piped straight into a variable.
+            "-V" | "--version" => {
+                println!("diskzap {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
             other => return Err(format!("unknown argument: {other}")),
         }
     }
@@ -135,7 +141,8 @@ fn print_help() {
          \x20                     Those are subprocesses that read their own config,\n\
          \x20                     so they reach the real machine even when $HOME is\n\
          \x20                     pointed at a scratch dir. Pass this whenever you\n\
-         \x20                     are testing against a fake home.\n\n\
+         \x20                     are testing against a fake home.\n\
+         -V, --version         print the version and exit\n\n\
          Exit code 0 = success. Machine-readable output with --json:\n\
          {{ dry_run, total_reclaimable_bytes, total_opt_in_bytes,\n\
          \x20 total_deleted_bytes, free_bytes_before, free_bytes_after,\n\
