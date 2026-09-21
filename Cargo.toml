@@ -2,7 +2,7 @@
 name = "diskzap"
 version = "0.2.0"
 edition = "2021"
-description = "Fast, safe reclaimer of regenerable cache and build files. Reports by default, deletes only on --apply."
+description = "Reclaims regenerable package caches, build artifacts and Docker cruft. Deletes only from an explicit catalog and reports by default, so cron or an AI agent can run it unattended."
 license = "MIT"
 repository = "https://github.com/longwind48/diskzap"
 readme = "README.md"
