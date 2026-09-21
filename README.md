@@ -182,10 +182,10 @@ Two surfaces:
 
 | | What it does |
 |---|---|
-| `prefix+shift+z` | A small popup: what's reclaimable **under the directory you're looking at**. Read-only — it can't delete. |
-| `herdr plugin pane open --plugin longwind48.diskzap --entrypoint report` | The full report as an overlay, prompting to delete on `y`. |
+| `prefix+shift+z` | A small popup: what's reclaimable **under the directory you're looking at**, with a `y/N` prompt to reclaim it. |
+| `herdr plugin pane open --plugin longwind48.diskzap --entrypoint report` | The full report as an overlay — every cache on the machine, not just this directory. |
 
-The popup is scoped from herdr's `focused_pane_cwd`, so it answers "is this worktree worth cleaning" without leaving what you're doing. It deliberately cannot apply: a glance you summon with one keystroke shouldn't be one keystroke from deleting a build you're still using.
+The popup is scoped from herdr's `focused_pane_cwd`, so it answers "is this worktree worth cleaning" without leaving what you're doing. It runs with `--only-roots`, which is what makes it a glance rather than a wait: a full report sizes every global cache first, measured at **69s** on one machine against **0.85s** scoped to a single project.
 
 This install builds from source, so it needs `cargo` on your `PATH`. To also sweep build artifacts, list one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it reports package caches and Docker only, and never walks a directory you didn't name.
 
@@ -218,6 +218,7 @@ diskzap --min-age-days 14      # skip anything used in the last 14 days
 diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
 diskzap --include-vm-disks     # opt in to deleting container VM disk images
 diskzap --top N                # how many individual paths to list (default 12)
+diskzap --only-roots           # only what's under a --root; skip home caches (much faster)
 diskzap --no-external          # skip docker prune / brew cleanup (for fake-$HOME testing)
 diskzap --json                 # machine-readable output
 diskzap --version              # print the version and exit (also -V)

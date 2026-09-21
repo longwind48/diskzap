@@ -9,7 +9,6 @@ Usage:  diskzap --root DIR --no-external --json | python3 here.py DIR
 """
 
 import json
-import os
 import sys
 
 BOLD, DIM, OFF = "\033[1m", "\033[2m", "\033[0m"
@@ -39,11 +38,8 @@ def main():
         if i.get("bytes", 0) > 0 and i.get("path", "").startswith(cwd + "/")
     ]
 
-    disp = cwd.replace(os.path.expanduser("~"), "~")
-    print()
-    print(f"  {BOLD}Reclaimable here{OFF}  {disp}")
-    print(f"  {'─' * 62}")
-
+    # here.sh prints the header before starting the scan, so the popup has
+    # content immediately rather than a blank box. Don't print it twice.
     if not here:
         print("  Nothing reclaimable in this directory.")
         print()
@@ -59,8 +55,7 @@ def main():
         print(f"    {human(i['bytes']):>9}  {rel}")
     if len(here) > 7:
         print(f"    {'':>9}  … and {len(here) - 7} more")
-    print()
-    print(f"  {DIM}To reclaim:{OFF} diskzap --apply --root {disp}")
+
 
 
 if __name__ == "__main__":
