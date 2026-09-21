@@ -311,16 +311,22 @@ Two things would help most: **more cache targets** (add an entry to
 change) and **native Windows support** (`%USERPROFILE%` fallback,
 `%LOCALAPPDATA%` paths, `windows-latest` in CI). Issues and PRs welcome.
 
+Run this once per clone so `git commit` opens with the house style — imperative
+subject under 70 characters, body explaining *why*:
+
+```bash
+git config commit.template .gitmessage
+```
+
+The [PR template](.github/pull_request_template.md) covers the rest. The one part
+worth reading before you start: anything that changes what gets deleted needs a
+regeneration story, a marker gate for ambiguous directory names, and a test in
+`tests/integration.rs` that asserts against a real filesystem.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
 ---
-
-<p align="center">
-  <a href="https://star-history.com/#longwind48/cachewipe&Date">
-    <img src="https://api.star-history.com/svg?repos=longwind48/cachewipe&type=Date" alt="Star history" width="600">
-  </a>
-</p>
 
 <p align="center"><sub>If cachewipe got you some disk space back, a ⭐ helps others find it.</sub></p>

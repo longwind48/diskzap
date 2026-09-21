@@ -1,0 +1,19 @@
+
+# ^ Subject: imperative mood, under 70 characters, no trailing period.
+#   "Add --no-external so a fake $HOME actually sandboxes the run"
+#   not "Added flag", not "fix: add flag", not "Updates to main.rs".
+#
+# Body below, wrapped at 72. Explain WHY, not what — the diff already shows
+# what. What was broken or missing, what you observed, what you decided, and
+# what you ruled out and why. `git log` is the design record for this repo: it
+# should tell whoever reads it at 2am why the code looks the way it does.
+#
+# Worth writing down when it applies:
+#   - a number you measured, and on what machine
+#   - an approach you tried that was worse, so nobody re-adds it
+#   - for a new cache target: the command that regenerates it
+#   - for a safety rule: the case it refuses, and what happens without it
+#
+# Everything from here down is stripped. Delete this block or leave it.
+#
+# Fixes #
