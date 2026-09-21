@@ -6,7 +6,7 @@
 Reclaim your disk. Delete nothing you'll miss.
 </pre></div>
 
-<p align="center"><strong>Agent skill · Rust CLI · dry-run by default · allowlist-only deletion · lock-aware · safe in a loop</strong></p>
+<p align="center"><strong>Agent skill · Rust CLI · herdr plugin · dry-run by default · allowlist-only deletion · lock-aware · safe in a loop</strong></p>
 
 <p align="center">
   <a href="https://github.com/longwind48/diskzap/actions/workflows/ci.yml"><img src="https://github.com/longwind48/diskzap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -92,11 +92,22 @@ Put it on a schedule and stop thinking about disk:
 
 It dry-runs first and age-gates, so the project you're actively building never disappears from under you.
 
-<p align="center">
-  <img src="demo/demo.gif" alt="diskzap reporting, then reclaiming, from the command line" width="900">
-  <br/><sub><b>The same thing as a plain CLI</b>, which is what the skill drives underneath — dry-run reports 4.4 GB across 8 caches, then <code>--apply</code> reclaims it.<br/>
-  Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
-</p>
+### Same tool, two other surfaces
+
+<table>
+<tr>
+<th width="50%">As a plain CLI</th>
+<th width="50%">As a <a href="https://herdr.dev">herdr</a> plugin</th>
+</tr>
+<tr>
+<td><img src="demo/demo.gif" alt="diskzap reporting then reclaiming from the command line"></td>
+<td><img src="assets/herdr-popup.gif" alt="the diskzap popup in herdr: 452MB across 5 items, reclaimed on y"></td>
+</tr>
+<tr>
+<td><sub>What the skill drives underneath. Dry-run reports 4.4&nbsp;GB across 8 caches, then <code>--apply</code> reclaims it.<br/>Recorded against a sandbox home — re-render with <code>vhs demo/demo.tape</code>.</sub></td>
+<td><sub><code>prefix+shift+z</code> pops up what's reclaimable in the directory you're looking at, and reclaims it on <code>y</code>. Here: five kinds of build output in one project.<br/>Recorded in a live herdr session.</sub></td>
+</tr>
+</table>
 
 <details>
 <summary><b>Why it's safe to let an agent run this</b> — deletion is a gated tool, not a shell string</summary>
@@ -164,24 +175,44 @@ Put the binary on your `PATH`. No Rust toolchain and no release for your platfor
 </details>
 
 <details>
-<summary><b>As a herdr plugin</b> — the report gets its own pane</summary>
+<summary><b>As a herdr plugin</b> — a one-key popup, plus the full report in a pane</summary>
 
 ```bash
 herdr plugin install longwind48/diskzap
-herdr plugin pane open --plugin longwind48.diskzap --entrypoint report
+herdr plugin action invoke longwind48.diskzap.setup-keys
 ```
 
-The pane reports first and deletes only if you answer `y`. Bind it to a key by pointing at the action:
+The second command registers `prefix+shift+z` and reloads the server. It backs up `config.toml` first, is a no-op if the binding already exists, and keys off the action name rather than the key combo — so rebinding it by hand won't produce a duplicate. Check it landed with `prefix+?`, which lists active bindings.
+
+To choose a different key, or to see the exact block before anything is written, run the script from the checkout. It prints and exits unless given `--yes`:
+
+```bash
+DISKZAP_HERDR_KEY=prefix+shift+f bash install.sh        # dry run, writes nothing
+DISKZAP_HERDR_KEY=prefix+shift+f bash install.sh --yes  # apply
+```
+
+**Two surfaces, for two different questions.**
+
+| | Question it answers |
+|---|---|
+| `prefix+shift+z` | "Is *this* directory worth cleaning?" A popup scoped to the focused pane's cwd, with a `y/N` prompt. Sub-second. |
+| `herdr plugin pane open --plugin longwind48.diskzap --entrypoint report` | "What's on this whole machine?" The full report as an overlay, prompting to delete on `y`. |
+
+The popup gets its directory from herdr's `focused_pane_cwd`, so it needs no configuration at all. It runs with `--only-roots`, which is what makes it a glance rather than a wait: a full report sizes every global cache first, measured at **69s** on one machine against **0.85s** scoped to one project.
+
+Bind the full report too, if you want both:
 
 ```toml
 [[keys.command]]
-key = "prefix+k"
+key = "prefix+shift+s"
 type = "plugin_action"
 command = "longwind48.diskzap.report"
-description = "reclaimable space"
+description = "diskzap: full report"
 ```
 
-This install builds from source, so it needs `cargo` on your `PATH`. To also sweep build artifacts, list one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it reports package caches and Docker only, and never walks a directory you didn't name.
+**Only the report pane reads config.** List one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` to have it sweep build artifacts too — with no such file it reports package caches and Docker only, and never walks a directory you didn't name. The popup ignores this file, since it already knows which directory you mean.
+
+This install builds from source, so it needs `cargo` on your `PATH`.
 
 </details>
 
@@ -212,6 +243,7 @@ diskzap --min-age-days 14      # skip anything used in the last 14 days
 diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
 diskzap --include-vm-disks     # opt in to deleting container VM disk images
 diskzap --top N                # how many individual paths to list (default 12)
+diskzap --only-roots           # only what's under a --root; skip home caches (much faster)
 diskzap --no-external          # skip docker prune / brew cleanup (for fake-$HOME testing)
 diskzap --json                 # machine-readable output
 diskzap --version              # print the version and exit (also -V)

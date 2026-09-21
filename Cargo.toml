@@ -1,6 +1,6 @@
 [package]
 name = "diskzap"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Reclaims regenerable package caches, build artifacts and Docker cruft. Deletes only from an explicit catalog and reports by default, so cron or an AI agent can run it unattended."
 license = "MIT"

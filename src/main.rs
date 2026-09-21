@@ -50,6 +50,14 @@ struct Config {
     include_vm_disks: bool,
     min_age_days: u64,
     scan_roots: Vec<PathBuf>,
+    /// Report only what is found under a `--root`, skipping every home-anchored
+    /// target.
+    ///
+    /// Exists because sizing the global caches dominates a run: on one machine a
+    /// bare report took 57s, almost all of it walking ~/.cache/uv and Xcode's
+    /// DerivedData. A caller that only wants "what does this project cost" was
+    /// paying that price and discarding the answer.
+    only_roots: bool,
     json: bool,
     top: usize,
     /// Skip delegated cleanups entirely.
@@ -79,6 +87,7 @@ fn parse_args() -> Result<Config, String> {
         include_vm_disks: false,
         min_age_days: 0,
         scan_roots: Vec::new(),
+        only_roots: false,
         json: false,
         top: 12,
         no_external: false,
@@ -94,6 +103,7 @@ fn parse_args() -> Result<Config, String> {
             "--include-os-caches" => cfg.include_os_caches = true,
             "--include-vm-disks" => cfg.include_vm_disks = true,
             "--no-external" => cfg.no_external = true,
+            "--only-roots" => cfg.only_roots = true,
             "--json" => cfg.json = true,
             "--min-age-days" => {
                 let v = args.next().ok_or("--min-age-days needs a value")?;
@@ -136,6 +146,9 @@ fn print_help() {
          \x20                     volume for that engine, so it needs this flag.\n\
          --min-age-days N      only touch things whose newest file is older than N\n\
          --top N               how many individual paths to list (default 12)\n\
+         --only-roots          report only what is under a --root; skip every\n\
+         \x20                     home-anchored cache. Much faster when you only\n\
+         \x20                     care about one project.\n\
          --no-external         skip delegated cleanups (docker prune, brew cleanup).\n\
          \x20                     Those are subprocesses that read their own config,\n\
          \x20                     so they reach the real machine even when $HOME is\n\
@@ -231,6 +244,13 @@ fn run(cfg: &Config, home: &str, home_path: &Path) -> Report {
     for (idx, target) in catalog.iter().enumerate() {
         // A tier we can neither delete nor are asked to report is skipped whole.
         if !deletable(target.tier, cfg) && !target.tier.always_reported() {
+            continue;
+        }
+
+        // --only-roots: NamedDirUnder is the only kind discovered by walking a
+        // --root; every other kind resolves under $HOME. Skipping them here
+        // means we never pay to size them.
+        if cfg.only_roots && !matches!(target.kind, Kind::NamedDirUnder { .. }) {
             continue;
         }
 

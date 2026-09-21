@@ -464,3 +464,35 @@ fn derived_data_is_found_without_a_root() {
 
     fs::remove_dir_all(&home).ok();
 }
+
+#[test]
+fn only_roots_skips_home_caches() {
+    // The popup surface needs "what does this project cost" without paying to
+    // size every global cache: on a real machine a full report took 69s against
+    // 0.85s with this flag, and the popup discards the global numbers anyway.
+    let home = scratch("onlyroots");
+    // A home-anchored cache, which must be skipped.
+    write_file(&home.join(".cache/uv/archive/wheel.bin"), 4096);
+    // A root-anchored artifact, which must still be found.
+    let proj = home.join("projects/app");
+    write_file(&proj.join("node_modules/dep/index.js"), 4096);
+
+    let json = run(&home, &["--only-roots", "--root", proj.to_str().unwrap()]);
+    assert!(
+        json.contains("\"id\": \"node_modules\""),
+        "--only-roots must still find artifacts under a --root"
+    );
+    assert!(
+        !json.contains("\"id\": \"uv\""),
+        "--only-roots must not resolve home-anchored caches"
+    );
+
+    // Without the flag, the same run sees the home cache.
+    let json = run(&home, &["--root", proj.to_str().unwrap()]);
+    assert!(
+        json.contains("\"id\": \"uv\""),
+        "without --only-roots the home cache should be reported"
+    );
+
+    fs::remove_dir_all(&home).ok();
+}
