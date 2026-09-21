@@ -67,6 +67,7 @@ If you ticked any of the above, all three below are required:
 ## Checklist
 
 - [ ] Scope is one problem. Unrelated fixes go in their own PR.
+- [ ] `CHANGELOG.md` updated under `## [Unreleased]` if this changes behaviour
 - [ ] `cargo fmt --check`
 - [ ] `cargo clippy --all-targets -- -D warnings`
 - [ ] `cargo test --all`
