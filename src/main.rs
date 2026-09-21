@@ -86,6 +86,10 @@ fn parse_args() -> Result<Config, String> {
     let mut args = env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
+            "--version" | "-V" => {
+                println!("diskzap {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
             "--apply" => cfg.apply = true,
             "--include-os-caches" => cfg.include_os_caches = true,
             "--include-vm-disks" => cfg.include_vm_disks = true,
@@ -119,6 +123,7 @@ fn print_help() {
     println!(
         "diskzap — reclaim regenerable cache & build files (safe by default)\n\n\
          USAGE:\n  diskzap [--apply] [--json] [--top N] [--include-os-caches]\n            [--include-vm-disks] [--min-age-days N] [--root PATH]...\n\n\
+         --version, -V        print the version and exit\n\
          By default diskzap REPORTS what it would free and deletes NOTHING.\n\
          Pass --apply to actually delete.\n\n\
          --root PATH           scan a projects dir for build artifacts\n\
