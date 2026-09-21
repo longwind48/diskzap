@@ -238,13 +238,21 @@ about a deletable thing, so it's short and auditable on purpose.
 | Tier | Targets | Default |
 |---|---|---|
 | **Package caches** | uv · pip · npm · yarn · pnpm · bun · cargo · go · gradle · maven · huggingface | ✅ on |
-| **Build artifacts** | `node_modules` · `.venv` · `.next` · `target` · `__pycache__` | ✅ on, needs `--root` |
+| **Build artifacts, inside projects** | `node_modules` · `.venv` · `.next` · `target` · `__pycache__` | ✅ on, needs `--root` |
+| **Build artifacts, at a fixed path** | Xcode `DerivedData` | ✅ on |
 | **Docker** | dangling images + build cache (via `docker system prune -f`) | ✅ on |
 | **OS / app caches** | `~/Library/Caches` | ⛔ opt-in |
 
-Build artifacts are only scanned under a `--root` you name, so diskzap never
-walks your home directory uninvited. OS caches are off by default because
-"regenerable" isn't guaranteed for every app that writes there.
+Build artifacts that live *inside* your projects are only scanned under a
+`--root` you name, so diskzap never walks your home directory uninvited. Xcode's
+`DerivedData` is build output too, but it sits at one known path instead of
+inside any project, so it needs no `--root` and no walking — the same way a
+package cache is found. It regenerates by rebuilding rather than re-downloading,
+which is slower than every other default-on target, so the report says "a cold
+build, not a download" rather than letting you assume it's cheap.
+
+OS caches are off by default because "regenerable" isn't guaranteed for every app
+that writes there.
 
 ## Safety
 

@@ -234,6 +234,22 @@ pub fn catalog() -> Vec<Target> {
         },
         // --- Project build artifacts (regenerate from a build) ---
         // These walk the scan roots; deletion requires the dir be under a root.
+        // --- Build output found at a fixed path rather than under a --root ---
+        // The tier is a risk label and the kind is a discovery mechanism; they
+        // are orthogonal. DerivedData is genuinely build output, so the tier is
+        // BuildArtifact, but it lives at one known path keyed by project rather
+        // than inside any project, so it resolves like a cache. No new machinery
+        // needed, and nothing here walks the home directory to find it.
+        Target {
+            id: "xcode-derived-data",
+            tier: BuildArtifact,
+            // Says "rebuild" rather than "re-download" on purpose. Every other
+            // default-on target costs a network fetch; this one costs a cold
+            // Swift build, which is minutes per project. The report prints this
+            // string, so it should not imply the cheap kind of regeneration.
+            regenerates: "remade by the next Xcode build of each project (a cold build, not a download)",
+            kind: HomeDirs(&["Library/Developer/Xcode/DerivedData"]),
+        },
         Target {
             id: "node_modules",
             tier: BuildArtifact,
@@ -424,6 +440,27 @@ mod tests {
         assert!(!Tier::VmDisk.default_on());
         assert!(Tier::PackageCache.default_on());
         assert!(!Tier::OsCache.default_on());
+    }
+
+    #[test]
+    fn derived_data_is_a_build_artifact_found_at_a_fixed_path() {
+        // The pairing this asserts is the whole design decision: BuildArtifact
+        // tier (it is build output) with HomeDirs kind (it is not inside any
+        // --root). If someone later switches it to NamedDirUnder it silently
+        // stops being found without a --root, so pin it.
+        let cat = catalog();
+        let t = cat.iter().find(|t| t.id == "xcode-derived-data").unwrap();
+        assert_eq!(t.tier, Tier::BuildArtifact);
+        assert!(
+            t.tier.default_on(),
+            "regenerable build output stays default-on"
+        );
+        match t.kind {
+            Kind::HomeDirs(paths) => {
+                assert_eq!(paths, ["Library/Developer/Xcode/DerivedData"])
+            }
+            _ => panic!("DerivedData is at a fixed path, so it must be HomeDirs"),
+        }
     }
 
     #[test]
