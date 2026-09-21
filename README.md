@@ -28,8 +28,8 @@ Reclaim your disk. Delete nothing you'll miss.
 </p>
 
 <p align="center">
-  <strong>88 KB of source · 168 MB of <code>target/</code> per worktree · ~1 GB per afternoon</strong><br>
-  <sub>Measured on this repo, across the six worktrees that closed its last four issues. Parallel agentic work multiplies build output, and none of it is data. <a href="#the-problem">How that adds up</a>.</sub>
+  <strong>29.7 GB reclaimable on one laptop · 31 cache targets · deletes nothing until you say so</strong><br>
+  <sub>Package caches, build output and Docker cruft — every byte of it regenerable. Agents make it worse: one <code>git worktree</code> costs 168 MB of <code>target/</code> on a repo whose source is 88 KB, and they run several at once. <a href="#the-problem">Why that adds up</a>.</sub>
 </p>
 
 ---
@@ -65,18 +65,19 @@ Package managers rarely evict anything, so a cache pinned to `@latest` keeps eve
 That's the whole interface. The agent runs the report, hands you the number, and waits:
 
 ```
-22.6 GB reclaimable across 9 caches.
+29.7 GB reclaimable across 11 caches.
 
   14.1 GB  ~/.cache/uv
+   6.0 GB  ~/Library/Developer/Xcode/DerivedData
    2.9 GB  ~/Library/Caches/Yarn
    2.4 GB  ~/Library/pnpm/store
    1.2 GB  ~/.npm/_cacache
    ...
 
-Held back: Docker Desktop's VM disk, 7.7 GB — that one needs --include-vm-disks,
+Held back: Docker Desktop's VM disk, 7.7 GB — that needs --include-vm-disks,
 because deleting it takes every local image, container and named volume with it.
 
-Delete the 22.6 GB?
+Delete the 29.7 GB?
 ```
 
 Say yes and it reclaims it. Narrow or widen in the same breath — `/diskzap ~/projects`, or `/diskzap just tell me what's reclaimable`. Saying "I'm low on disk space" triggers it too.
