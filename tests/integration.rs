@@ -434,3 +434,33 @@ fn maven_repository_is_found_and_settings_xml_survives() {
 
     fs::remove_dir_all(&home).ok();
 }
+
+#[test]
+fn derived_data_is_found_without_a_root() {
+    // The point: DerivedData is BuildArtifact tier but needs no --root, because
+    // it is found at a fixed path rather than by walking a project tree. If this
+    // regresses to NamedDirUnder it silently stops being reported here.
+    let home = scratch("xcode");
+    let dd = home.join("Library/Developer/Xcode/DerivedData/MyApp-abc123/Build");
+    write_file(&dd.join("MyApp.o"), 4096);
+
+    let json = run(&home, &["--no-external"]); // note: no --root
+    assert!(
+        json.contains("\"id\": \"xcode-derived-data\""),
+        "DerivedData should be reported with no --root given"
+    );
+    assert!(
+        json.contains("\"tier\": \"build-artifact\""),
+        "it is build output, and the tier should say so"
+    );
+    assert!(dd.join("MyApp.o").exists(), "dry run must not delete");
+
+    let json = run(&home, &["--apply", "--no-external"]);
+    assert!(json.contains("\"reason\": \"deleted\""));
+    assert!(
+        !home.join("Library/Developer/Xcode/DerivedData").exists(),
+        "--apply should have removed DerivedData"
+    );
+
+    fs::remove_dir_all(&home).ok();
+}
