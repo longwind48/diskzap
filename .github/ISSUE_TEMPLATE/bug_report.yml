@@ -1,0 +1,109 @@
+name: Bug Report
+description: Something diskzap did that it should not have, or did not do that it should
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **If diskzap deleted something that does not regenerate, say so in the first
+        line of the description.** That is the most serious class of bug this project
+        can have and it gets looked at before anything else.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect to happen?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-loss
+    attributes:
+      label: Did anything get deleted?
+      options:
+        - "No — this was a report / dry run, nothing was deleted"
+        - "Yes, with --apply, and everything it removed regenerated fine"
+        - "Yes, with --apply, and it removed something that does NOT regenerate"
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: The exact command
+      description: Every flag, verbatim. Redact paths only if they are genuinely sensitive.
+      render: shell
+      placeholder: diskzap --apply --root ~/projects --min-age-days 14
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: What it printed
+      description: |
+        The report or error, as text rather than a screenshot. `--json` output is ideal
+        if you still have it — it carries the verdict and reason for every target.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The release tag, the crates.io version, or the commit you built from.
+      placeholder: v0.2.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install it?
+      options:
+        - "cargo install diskzap"
+        - "Release binary from GitHub"
+        - "Built from source (cargo build --release)"
+        - "Agent skill (npx skills add)"
+        - "herdr plugin"
+        - "Shell fallback (references/fallback.md)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Linux (x86_64)
+        - Linux (aarch64)
+        - Windows via WSL2
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part is this about?
+      description: Best guess is fine, we will relabel if needed.
+      options:
+        - "Targets catalog: a cache was missed, mis-sized, or should not be listed"
+        - "Safety: something was deleted that should have been refused"
+        - "Safety: something was refused that should have been deletable"
+        - "Sizing: the number reported did not match the disk"
+        - "Docker / container VM disks"
+        - "Age gating (--min-age-days)"
+        - "Agent skill: wrong invocation, or the agent did the wrong thing"
+        - "herdr plugin / pane"
+        - "Output: text report or --json"
+        - "Install or build"
+        - "Docs"
+        - "Not sure"
+    validations:
+      required: false

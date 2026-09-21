@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/longwind48/diskzap/discussions
+    about: For anything that is not a bug or a concrete proposal — ask in Discussions.
+  - name: Security issue
+    url: https://github.com/longwind48/diskzap/security/policy
+    about: Do not open a public issue for a vulnerability. SECURITY.md has the process.

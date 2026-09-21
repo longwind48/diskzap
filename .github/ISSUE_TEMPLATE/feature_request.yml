@@ -1,0 +1,71 @@
+name: Feature Request
+description: Propose a new capability (for a new cache target, use the Cache Target template instead)
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Check for existing issues
+      options:
+        - label: I have searched the existing issues and this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: the-feature
+    attributes:
+      label: The feature
+      description: What should diskzap be able to do that it cannot do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-flow
+    attributes:
+      label: Before / After
+      description: |
+        Two ordered lists walking the same person through the same task, written from
+        the seat of someone sitting at a terminal. Every rule below applies.
+
+        - Lead each list with one plain sentence: where the flow dead-ends today, and
+          what it would let you do instead. Then number the steps.
+        - Every step is something you type or see: the command and its flags, what the
+          report said, what was actually on disk afterward.
+        - No internals. Do not name functions, structs, or source files — ask for the
+          behaviour you need, not the implementation you imagine.
+        - Keep the two lists step-for-step identical until they diverge, so the missing
+          capability is obvious.
+        - "Before" is also where you show the workaround you are living with. That is
+          what tells us how badly this is needed.
+      placeholder: |
+        Before (today): there is no way to see what a scheduled run would free without also seeing every path, so the weekly cron mail is 200 lines nobody reads
+
+        1. `diskzap --root ~/projects`
+        2. The report lists every target, then every individual path under "largest"
+        3. My workaround is piping it through `tail -3`, which also hides the held-back VM disks I do care about
+
+        After: the same run can print just the summary
+
+        1. `diskzap --root ~/projects --summary`
+        2. The output is the totals line plus anything held back, and nothing else
+        3. The cron mail is four lines and I actually read it
+    validations:
+      required: true
+
+  - type: textarea
+    id: how-far-you-got
+    attributes:
+      label: How far you got
+      description: |
+        Run as much of the "After" list as you can against a real diskzap you built or
+        installed yourself, then paste the commands and their full output, ending at the
+        step that dead-ends.
+
+        - Say plainly what stopped you, in user terms: the flag came back as an unknown
+          argument, the report omitted something, there was no way to express it.
+        - Real runs only. If it is easier to show on a sandbox `$HOME`, note that you
+          used one and pass `--no-external` so the delegated cleanups stay off.
+        - Include the version or commit you were on.
+      render: shell
+    validations:
+      required: false

@@ -1,0 +1,103 @@
+name: New Cache Target
+description: Propose a cache or build artifact diskzap should know how to reclaim
+title: "[Target]: "
+labels: ["enhancement", "target"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most common contribution to diskzap and usually a single entry in
+        [`src/targets.rs`](../../src/targets.rs). The bar is one question: **does every
+        byte come back on its own?** If any of it is state a tool will not regenerate,
+        it is data, and data does not go in the catalog at any tier.
+
+  - type: input
+    id: tool
+    attributes:
+      label: Which tool writes it?
+      placeholder: Bun, Xcode, Maven, Deno…
+    validations:
+      required: true
+
+  - type: textarea
+    id: paths
+    attributes:
+      label: Paths, per platform
+      description: |
+        Absolute paths, one per line, tagged with the platform they apply to. Targets
+        carry a list of locations, so a tool whose cache sits somewhere different on
+        macOS and Linux gets both rather than one guess.
+      render: shell
+      placeholder: |
+        macOS:  ~/Library/Caches/example
+        Linux:  ~/.cache/example
+    validations:
+      required: true
+
+  - type: textarea
+    id: regeneration-story
+    attributes:
+      label: Regeneration story
+      description: |
+        Name the command that recreates it, and say what the user pays to get it back —
+        a re-download, a rebuild, how long. This is the field that decides whether the
+        target is accepted, so be specific rather than reassuring.
+      placeholder: |
+        `bun install` re-downloads it. Cost is one cold install per project, network-bound.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Which tier does it belong in?
+      description: |
+        PackageCache and BuildArtifact are on by default. OsCache and VmDisk require an
+        explicit opt-in flag because "regenerable" is not guaranteed for everything that
+        lives there. If you are unsure, say so in the notes.
+      options:
+        - "PackageCache — a download cache; deleting it forces a re-download"
+        - "BuildArtifact — build output; a build command remakes it"
+        - "Docker — delegated to a container engine's own prune"
+        - "OsCache — an app cache that may hold semi-durable state (opt-in)"
+        - "VmDisk — a container/VM disk image (reported always, deleted only on opt-in)"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: input
+    id: marker
+    attributes:
+      label: Marker file, if the directory name is ambiguous
+      description: |
+        Names like `target`, `build`, `dist` and `Library` are also ordinary data
+        directory names, so they are only matched with proof of the ecosystem beside
+        them. Leave blank if the path is unambiguous.
+      placeholder: Cargo.toml, pom.xml, package.json…
+    validations:
+      required: false
+
+  - type: textarea
+    id: size
+    attributes:
+      label: What it is costing you
+      description: |
+        `du -sh <path>` on your own machine. A real number is what moves a target up the
+        list, and it tells us whether it is worth a catalog entry at all.
+      render: shell
+      placeholder: |
+        $ du -sh ~/Library/Developer/Xcode/DerivedData
+         31G	/Users/me/Library/Developer/Xcode/DerivedData
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: |
+        Versioned installs that should keep the newest of each product, a lockfile that
+        means "in use", a native clean command that should be preferred over deleting
+        the directory outright — all worth mentioning here.
+    validations:
+      required: false
