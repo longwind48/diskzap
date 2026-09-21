@@ -164,6 +164,17 @@ pub fn catalog() -> Vec<Target> {
             kind: HomeDirs(&[".local/share/pnpm/store", "Library/pnpm/store"]),
         },
         Target {
+            id: "bun",
+            tier: PackageCache,
+            // Only the install cache. ~/.bun itself holds the bun binary and
+            // global installs, same trap as PNPM_HOME above, so the parent is
+            // off-limits. $BUN_INSTALL can relocate this; the default covers
+            // almost everyone and a relocated cache reports as absent rather
+            // than resolving to something wrong.
+            regenerates: "re-downloaded on next `bun install`",
+            kind: HomeDirs(&[".bun/install/cache"]),
+        },
+        Target {
             id: "cargo-registry",
             tier: PackageCache,
             regenerates: "re-downloaded on next `cargo build`",
@@ -402,6 +413,25 @@ mod tests {
         assert!(!Tier::VmDisk.default_on());
         assert!(Tier::PackageCache.default_on());
         assert!(!Tier::OsCache.default_on());
+    }
+
+    #[test]
+    fn bun_never_targets_bun_home_itself() {
+        // Same trap as pnpm: ~/.bun holds the bun binary and global installs,
+        // so only the install cache underneath it is reclaimable.
+        let cat = catalog();
+        let t = cat.iter().find(|t| t.id == "bun").unwrap();
+        match t.kind {
+            Kind::HomeDirs(paths) => {
+                for p in paths {
+                    assert!(
+                        p.ends_with("install/cache"),
+                        "~/.bun holds the bun binary and global installs; only the install cache is reclaimable, got {p}"
+                    );
+                }
+            }
+            _ => panic!("bun should be HomeDirs"),
+        }
     }
 
     #[test]
