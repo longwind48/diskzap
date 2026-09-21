@@ -6,7 +6,7 @@
 Reclaim your disk. Delete nothing you'll miss.
 </pre></div>
 
-<p align="center"><strong>Agent skill · Rust CLI · built for parallel worktrees · dry-run by default · allowlist-only deletion · safe in a loop</strong></p>
+<p align="center"><strong>Agent skill · Rust CLI · dry-run by default · allowlist-only deletion · lock-aware · safe in a loop</strong></p>
 
 <p align="center">
   <a href="https://github.com/longwind48/diskzap/actions/workflows/ci.yml"><img src="https://github.com/longwind48/diskzap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -28,32 +28,34 @@ Reclaim your disk. Delete nothing you'll miss.
 </p>
 
 <p align="center">
-  <strong>29.7 GB reclaimable on one laptop · 31 cache targets · deletes nothing until you say so</strong><br>
-  <sub>Package caches, build output and Docker cruft — every byte of it regenerable. Agents make it worse: one <code>git worktree</code> costs 168 MB of <code>target/</code> on a repo whose source is 88 KB, and they run several at once. <a href="#the-problem">Why that adds up</a>.</sub>
+  <strong>31 cache targets · reports before it deletes · safe to run unattended</strong><br>
+  <sub>Package caches, build output and Docker cruft — every byte of it regenerable, and usually the biggest reclaimable thing on the disk.</sub>
 </p>
 
 ---
 
 ## The problem
 
-Hand an agent several issues and it gives each one a `git worktree` — isolated branches, parallel builds, the right call. Each one also gets its own `target/`, `node_modules/`, `.venv/`, **all at the same time**.
+**"Your disk is almost full."** `ENOSPC` mid-build. An install that dies at 97%.
 
-This repo is near the floor for a real Rust project: 2,162 lines, two dependencies, 88 KB of source. One worktree's `target/` is **168 MB**. Six is a gigabyte. A real app with two hundred dependencies is several GB *per worktree*.
+So you go hunting — clear some downloads, empty the trash, buy back 2 GB, full again next week. The real culprit is invisible: **package caches and build artifacts.** Package managers rarely evict anything, so a cache pinned to `@latest` keeps every version it ever downloaded, and every project you build carries its own `node_modules`, `target/` or `.venv`.
 
-Worktrees clean up when the work lands, so this isn't litter — it's **concurrent peak**. You need the headroom exactly while several builds are running, which is when `ENOSPC` kills the whole batch instead of one command you were watching.
+**None of it is data.** Every byte regenerates: `npm install` re-downloads it, `cargo build` remakes it. It's the safest space on your disk to delete and usually the largest — people leave it because `rm -rf` with a glob at 2am is a bad idea, and telling cache from work is genuinely hard.
 
-**None of it is data.** Every byte regenerates: `npm install` re-downloads it, `cargo build` remakes it. It's the safest space on your disk to delete and usually the largest.
+Running coding agents makes it arrive faster. A worktree per task means several copies of the same build output alive at once, which is how a quiet 2 GB becomes a failed batch.
+
+diskzap draws that line for you, shows the number first, and deletes nothing until you say so.
 
 <details>
-<summary>The same problem without agents — still true, just slower</summary>
+<summary>What it actually costs, measured</summary>
 
 | | Typical size |
 |---|---|
 | One `node_modules` | [340 MB median, 720 MB at p75](https://enterno.io/en/s/research-npm-dependencies-median-2026) |
 | Docker, left unpruned | [tens of GB](https://khides.com/en/blog/developer-disk-cleanup/) |
+| One `git worktree` of this repo | 168 MB of `target/`, against 88 KB of source |
 | A neglected package cache | **340 GB** — this tool exists because of one |
 
-Package managers rarely evict anything, so a cache pinned to `@latest` keeps every version it ever downloaded.
 </details>
 
 ## Try it
@@ -99,7 +101,7 @@ It dry-runs first and age-gates, so the project you're actively building never d
 <details>
 <summary><b>Why it's safe to let an agent run this</b> — deletion is a gated tool, not a shell string</summary>
 
-Ask an agent to free up disk space and it will improvise `rm -rf` from a bash tool. Bash hands the harness an opaque command string, so nothing can inspect what's about to be deleted or stop it — and the blast radius is worst in exactly the setup above, a tree of worktrees where `target/` is disposable and the branch you haven't pushed is not.
+Ask an agent to free up disk space and it will improvise `rm -rf` from a bash tool. Bash hands the harness an opaque command string, so nothing can inspect what's about to be deleted or stop it. The cost of a wrong guess isn't symmetrical: `target/` is disposable, the branch you haven't pushed is not, and they often sit one directory apart.
 
 diskzap makes deletion a typed action the harness can intercept and audit:
 
@@ -225,11 +227,12 @@ about a deletable thing, so it's short and auditable on purpose.
 
 | Tier | Targets | Default |
 |---|---|---|
-| **Package caches** | uv · pip · npm · yarn · pnpm · bun · cargo · go · gradle · maven · huggingface | ✅ on |
-| **Build artifacts, inside projects** | `node_modules` · `.venv` · `.next` · `target` · `__pycache__` | ✅ on, needs `--root` |
-| **Build artifacts, at a fixed path** | Xcode `DerivedData` | ✅ on |
-| **Docker** | dangling images + build cache (via `docker system prune -f`) | ✅ on |
-| **OS / app caches** | `~/Library/Caches` | ⛔ opt-in |
+| **Package caches** (15) | uv · pip · npm · npx · yarn · pnpm · bun · cargo · go · gradle · maven · huggingface · puppeteer · playwright · homebrew | ✅ on |
+| **Build artifacts, inside projects** (5) | `node_modules` · `.venv` · `.next` · `target` · `__pycache__` | ✅ on, needs `--root` |
+| **Build artifacts, at a fixed path** (1) | Xcode `DerivedData` | ✅ on |
+| **Docker** (1) | dangling images + build cache (via `docker system prune -f`) | ✅ on |
+| **Container VM disks** (5) | Docker Desktop · Finch · Lima · Colima · Podman | ⛔ reported always, deleted only with `--include-vm-disks` |
+| **OS / app caches** (4) | Spotify · Firefox · Chrome · jsii, under `~/Library/Caches` | ⛔ opt-in |
 
 Build artifacts that live *inside* your projects are only scanned under a
 `--root` you name, so diskzap never walks your home directory uninvited. Xcode's
@@ -265,7 +268,7 @@ comparing against are [kondo](https://github.com/tbillington/kondo) (2.4k),
 
 | | diskzap | kondo | npkill | dust |
 |---|---|---|---|---|
-| Project build artifacts | 5 types | **20+ types** | `node_modules` only | — |
+| Project build artifacts | 6 types | **20+ types** | `node_modules` only | — |
 | Global package caches (uv, pip, npm, cargo, go, gradle…) | ✅ | — | — | — |
 | Docker + container VM disks | ✅ | — | — | — |
 | Reports without deleting | ✅ default | interactive prompt | interactive | only ever reports |
