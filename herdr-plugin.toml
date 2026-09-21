@@ -1,0 +1,27 @@
+id = "longwind48.cachewipe"
+name = "cachewipe"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Report and reclaim regenerable cache & build files. Reports first, deletes only on an explicit y."
+platforms = ["linux", "macos"]
+
+# Needs a Rust toolchain on the user's machine; herdr reports the failure if
+# cargo is missing but will not install it.
+[[build]]
+command = ["cargo", "build", "--release"]
+
+# The report is the product, so the pane is the primary surface — you read the
+# number, then confirm. Placement is an overlay so it restores your layout.
+[[panes]]
+id = "report"
+title = "cachewipe — reclaimable space"
+placement = "overlay"
+command = ["bash", "herdr/pane.sh"]
+
+# Exists so the pane is reachable from a keybinding: herdr binds keys to
+# actions, not to pane entrypoints.
+[[actions]]
+id = "report"
+title = "Report reclaimable space"
+contexts = ["workspace"]
+command = ["bash", "herdr/open-report.sh"]

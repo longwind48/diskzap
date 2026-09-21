@@ -139,6 +139,32 @@ npx skills add longwind48/cachewipe --agent '*' -y      # every agent it finds
 npx skills add longwind48/cachewipe -a codex -a cursor  # or name them
 ```
 
+### Using [herdr](https://herdr.dev)?
+
+It's also a herdr plugin, so the report gets a pane instead of a scrollback dump:
+
+```bash
+herdr plugin install longwind48/cachewipe
+herdr plugin pane open --plugin longwind48.cachewipe --entrypoint report
+```
+
+The pane reports first and deletes only if you answer `y`. Bind it to a key by
+pointing at the action:
+
+```toml
+[[keys.command]]
+key = "prefix+k"
+type = "plugin_action"
+command = "longwind48.cachewipe.report"
+description = "reclaimable space"
+```
+
+Install builds from source, so it needs `cargo` on your `PATH`. To also sweep
+build artifacts, list one project dir per line in
+`$(herdr plugin config-dir longwind48.cachewipe)/roots` — with no such file it
+reports package caches and Docker only, and never walks a directory you didn't
+name.
+
 **Just want the binary, no assistant?** It's a plain CLI:
 
 ```bash
