@@ -387,3 +387,27 @@ fn total_reclaimable(json: &str) -> u64 {
         .unwrap_or(tail.len());
     tail[..end].parse().unwrap()
 }
+
+#[test]
+fn bun_install_cache_is_found_and_bun_home_survives() {
+    // The point of the entry is that ~/.bun is not the target: the bun binary
+    // and global installs live there and no `bun install` brings those back.
+    let home = scratch("bun");
+    let cache = home.join(".bun/install/cache");
+    write_file(&cache.join("lodash@4.17.21.tgz"), 4096);
+    // Things under ~/.bun that must not be touched.
+    write_file(&home.join(".bun/bin/bun"), 128);
+
+    let json = run(&home, &["--apply", "--no-external"]);
+    assert!(json.contains("\"id\": \"bun\""), "bun target not reported");
+    assert!(
+        !cache.exists(),
+        "--apply should have removed the install cache"
+    );
+    assert!(
+        home.join(".bun/bin/bun").exists(),
+        "the bun binary is not a cache and must survive"
+    );
+
+    fs::remove_dir_all(&home).ok();
+}
