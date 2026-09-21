@@ -1,8 +1,8 @@
 id = "longwind48.diskzap"
 name = "diskzap"
-version = "0.2.0"
+version = "0.3.0"
 min_herdr_version = "0.7.0"
-description = "Report and reclaim regenerable cache & build files. Reports first, deletes only on an explicit y."
+description = "Reclaim regenerable caches and build output. prefix+shift+z pops up what is reclaimable in the directory you are looking at; the report pane covers the whole machine. Both report first and delete only on an explicit y."
 platforms = ["linux", "macos"]
 
 # Needs a Rust toolchain on the user's machine; herdr reports the failure if
