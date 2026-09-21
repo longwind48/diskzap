@@ -12,7 +12,6 @@ Reclaim your disk. Delete nothing you'll miss.
   <a href="https://github.com/longwind48/cachewipe/actions/workflows/ci.yml"><img src="https://github.com/longwind48/cachewipe/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="#safety"><img src="https://img.shields.io/badge/deletes-only%20on%20--apply-brightgreen.svg" alt="Dry-run by default"></a>
-  <a href="#tests"><img src="https://img.shields.io/badge/tests-15%20passing-brightgreen.svg" alt="15 tests"></a>
   <img src="https://img.shields.io/badge/rust-stable-orange.svg" alt="Rust stable">
   <img src="https://img.shields.io/badge/macOS%20%7C%20Linux%20%7C%20WSL-supported-lightgrey.svg" alt="Platforms: macOS, Linux, WSL">
 </p>
@@ -22,6 +21,7 @@ Reclaim your disk. Delete nothing you'll miss.
   <a href="#install">Install</a> ·
   <a href="#what-it-cleans">What it cleans</a> ·
   <a href="#safety">Safety</a> ·
+  <a href="#how-it-compares">How it compares</a> ·
   <a href="#why-not-just-du">Why not <code>du</code>?</a> ·
   <a href="#run-it-weekly">Run it weekly</a> ·
   <a href="SECURITY.md">Security</a>
@@ -240,6 +240,47 @@ Every rule below is enforced in [`src/safety.rs`](src/safety.rs) and asserted by
 | Lock-aware | A fresh package-manager lockfile means "in use" — declined rather than corrupted. |
 | Docker delegated | `docker system prune -f` only. Never `-a` (tagged images), never `--volumes` (your data). |
 | Dry-run default | `--apply` is the only way anything is removed. |
+
+## How it compares
+
+Disk cleanup is a crowded shelf, so here is the honest version. The tools worth
+comparing against are [kondo](https://github.com/tbillington/kondo) (2.4k),
+[npkill](https://github.com/voidcosmos/npkill) (9.5k) and
+[dust](https://github.com/bootandy/dust) (12.3k).
+
+| | cachewipe | kondo | npkill | dust |
+|---|---|---|---|---|
+| Project build artifacts | 5 types | **20+ types** | `node_modules` only | — |
+| Global package caches (uv, pip, npm, cargo, go, gradle…) | ✅ | — | — | — |
+| Docker + container VM disks | ✅ | — | — | — |
+| Reports without deleting | ✅ default | interactive prompt | interactive | only ever reports |
+| Age gate | ✅ `--min-age-days` | ✅ `--older 3M` | — | — |
+| Declines a cache held by a live lockfile | ✅ | — | — | — |
+| Machine-readable output | ✅ `--json` | — | — | — |
+| Ships as an agent skill | ✅ | — | — | — |
+
+**Where kondo wins, plainly:** it covers four times as many project types
+(Unity, Unreal, Haskell, Scala, Terraform…), it has a GUI, and it installs from
+Homebrew and winget. If your problem is "I have 200 projects in 20 languages and
+want the build dirs gone", use kondo — it is the better tool for that job.
+
+**Where this one is different** is the part that has nothing to do with feature
+count. kondo's own README opens its usage section with:
+
+> Kondo is *essentially* `rm -rf` with a prompt. Use at your own discretion.
+> Always have a backup of your projects.
+
+That is an honest and reasonable thing for an interactive tool to say — a human
+reads the list and decides. It is also precisely what you cannot hand to a
+scheduler or an AI agent, because there is nobody at the prompt. cachewipe is
+built for the case where nothing is watching: no arbitrary-path delete exists in
+the code, every path resolves from [`src/targets.rs`](src/targets.rs), dry-run is
+the default rather than a flag, and `/`, `$HOME` and symlink escapes are refused
+by [`src/safety.rs`](src/safety.rs) instead of by the operator's attention.
+
+So the split is roughly: **kondo for a manual sweep across many languages,
+cachewipe for an unattended one that also gets the package caches and Docker** —
+which on most laptops are the bigger numbers anyway.
 
 ## Run it weekly
 
