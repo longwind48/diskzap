@@ -62,15 +62,24 @@ Package managers rarely evict anything, so a cache pinned to `@latest` keeps eve
 /diskzap
 ```
 
-That's the whole interface. It reports what it found, waits for your OK, then reclaims it:
+That's the whole interface. The agent runs the report, hands you the number, and waits:
 
-<p align="center">
-  <img src="demo/demo.gif" alt="diskzap in action" width="900">
-  <br/><sub>Dry-run reports 4.4 GB across 8 caches — then <code>--apply</code> reclaims it.<br/>
-  Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
-</p>
+```
+22.6 GB reclaimable across 9 caches.
 
-Narrow or widen it in the same breath — `/diskzap ~/projects`, or `/diskzap just tell me what's reclaimable`. Saying "I'm low on disk space" triggers it too.
+  14.1 GB  ~/.cache/uv
+   2.9 GB  ~/Library/Caches/Yarn
+   2.4 GB  ~/Library/pnpm/store
+   1.2 GB  ~/.npm/_cacache
+   ...
+
+Held back: Docker Desktop's VM disk, 7.7 GB — that one needs --include-vm-disks,
+because deleting it takes every local image, container and named volume with it.
+
+Delete the 22.6 GB?
+```
+
+Say yes and it reclaims it. Narrow or widen in the same breath — `/diskzap ~/projects`, or `/diskzap just tell me what's reclaimable`. Saying "I'm low on disk space" triggers it too.
 
 Put it on a schedule and stop thinking about disk:
 
@@ -79,6 +88,12 @@ Put it on a schedule and stop thinking about disk:
 ```
 
 It dry-runs first and age-gates, so the project you're actively building never disappears from under you.
+
+<p align="center">
+  <img src="demo/demo.gif" alt="diskzap reporting, then reclaiming, from the command line" width="900">
+  <br/><sub><b>The same thing as a plain CLI</b>, which is what the skill drives underneath — dry-run reports 4.4 GB across 8 caches, then <code>--apply</code> reclaims it.<br/>
+  Recorded against a sandbox home; re-render with <code>vhs demo/demo.tape</code>.</sub>
+</p>
 
 <details>
 <summary><b>Why it's safe to let an agent run this</b> — deletion is a gated tool, not a shell string</summary>
@@ -93,34 +108,67 @@ diskzap makes deletion a typed action the harness can intercept and audit:
 - **Offline** — no network code, no telemetry, two dependencies (`serde`, `serde_json`).
 
 [`src/safety.rs`](src/safety.rs) is 184 readable lines and the integration suite asserts every rule against a real filesystem. [SECURITY.md](SECURITY.md) has the threat model.
+
 </details>
 
 ## Install
 
-`npx skills add longwind48/diskzap` detects whichever coding assistants you
-have and asks where to install. It isn't tied to one vendor —
-[`npx skills`](https://github.com/vercel-labs/skills) supports Claude Code,
-Codex, Cursor, Zed, Warp, Cline, Continue, Crush, OpenClaw, Amp, Replit and dozens
-more. To skip the prompt:
+```bash
+npx skills add longwind48/diskzap
+```
+
+That detects whichever coding assistants you have and asks where to install. It isn't tied to one vendor — [`npx skills`](https://github.com/vercel-labs/skills) supports Claude Code, Codex, Cursor, Zed, Warp, Cline, Continue, Crush, OpenClaw, Amp, Replit and dozens more.
+
+<details>
+<summary><b>Skip the prompt</b> — install to every agent, or name them</summary>
 
 ```bash
 npx skills add longwind48/diskzap --agent '*' -y      # every agent it finds
 npx skills add longwind48/diskzap -a codex -a cursor  # or name them
 ```
 
+</details>
+
 <details>
-<summary><b>Using herdr?</b> — the report gets its own pane</summary>
+<summary><b>As a plain CLI</b> — <code>cargo install</code>, a release binary, or from source</summary>
 
+With a Rust toolchain it's one line:
 
-It's also a herdr plugin, so the report gets a pane instead of a scrollback dump:
+```bash
+cargo install diskzap
+```
+
+Otherwise grab a release build — no toolchain needed. Every asset ships with a `.sha256` beside it:
+
+```bash
+# macOS (Apple silicon); swap for x86_64-apple-darwin or x86_64-unknown-linux-gnu
+curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz
+curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz.sha256
+shasum -a 256 -c diskzap-aarch64-apple-darwin.tar.gz.sha256
+tar xzf diskzap-aarch64-apple-darwin.tar.gz && ./diskzap --help
+```
+
+Or build it yourself, which is the option to prefer if you'd rather not trust a binary you didn't compile:
+
+```bash
+git clone https://github.com/longwind48/diskzap && cd diskzap
+cargo build --release
+./target/release/diskzap --help
+```
+
+Put the binary on your `PATH`. No Rust toolchain and no release for your platform? There's a pure-shell fallback in [`references/fallback.md`](references/fallback.md).
+
+</details>
+
+<details>
+<summary><b>As a herdr plugin</b> — the report gets its own pane</summary>
 
 ```bash
 herdr plugin install longwind48/diskzap
 herdr plugin pane open --plugin longwind48.diskzap --entrypoint report
 ```
 
-The pane reports first and deletes only if you answer `y`. Bind it to a key by
-pointing at the action:
+The pane reports first and deletes only if you answer `y`. Bind it to a key by pointing at the action:
 
 ```toml
 [[keys.command]]
@@ -130,48 +178,12 @@ command = "longwind48.diskzap.report"
 description = "reclaimable space"
 ```
 
-Install builds from source, so it needs `cargo` on your `PATH`. To also sweep
-build artifacts, list one project dir per line in
-`$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it
-reports package caches and Docker only, and never walks a directory you didn't
-name.
-
-**Just want the binary, no assistant?** With a Rust toolchain it's one line:
-
-```bash
-cargo install diskzap
-```
-
-Otherwise grab a release build — no toolchain needed. Every asset ships with a
-`.sha256` beside it:
-
-```bash
+This install builds from source, so it needs `cargo` on your `PATH`. To also sweep build artifacts, list one project dir per line in `$(herdr plugin config-dir longwind48.diskzap)/roots` — with no such file it reports package caches and Docker only, and never walks a directory you didn't name.
 
 </details>
 
-# macOS (Apple silicon); swap for x86_64-apple-darwin or x86_64-unknown-linux-gnu
-curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz
-curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz.sha256
-shasum -a 256 -c diskzap-aarch64-apple-darwin.tar.gz.sha256
-tar xzf diskzap-aarch64-apple-darwin.tar.gz && ./diskzap --help
-```
-
-Or build it yourself, which is the option to prefer if you'd rather not trust a
-binary you didn't compile:
-
-```bash
-git clone https://github.com/longwind48/diskzap && cd diskzap
-cargo build --release
-./target/release/diskzap --help
-```
-
-Put the binary on your `PATH` to use the short commands above. No Rust toolchain
-and no release for your platform? There's a pure-shell fallback with the same
-targets in [`references/fallback.md`](references/fallback.md).
-
 <details>
 <summary><b>Platform support</b> — macOS, Linux, and why Windows needs WSL</summary>
-
 
 | Environment | Works? |
 |---|---|
@@ -180,24 +192,14 @@ targets in [`references/fallback.md`](references/fallback.md).
 | **Windows via WSL2** | ✅ Yes — install and run inside the WSL shell |
 | Windows: PowerShell / cmd.exe natively | ❌ **No** |
 
-**Windows users need WSL.** Being straight about why, rather than implying
-partial support: diskzap resolves your home directory from `$HOME`, which
-Windows doesn't set (it uses `%USERPROFILE%`), so it exits immediately. The cache
-catalog also only contains Unix paths — the Windows equivalents live under
-`%LOCALAPPDATA%` and aren't in it. And CI only builds and tests on Linux and
-macOS, so Windows is genuinely unverified, not just undocumented.
+**Windows users need WSL.** Being straight about why, rather than implying partial support: diskzap resolves your home directory from `$HOME`, which Windows doesn't set (it uses `%USERPROFILE%`), so it exits immediately. The cache catalog also only contains Unix paths — the Windows equivalents live under `%LOCALAPPDATA%` and aren't in it. And CI only builds and tests on Linux and macOS, so Windows is genuinely unverified, not just undocumented.
 
-Inside WSL it's a normal Linux install and works fully — but note it cleans the
-caches of your *Linux* home, not `C:\Users\you\AppData`. Native Windows support
-is a welcome contribution — it needs a `USERPROFILE` fallback in `src/main.rs`,
-`%LOCALAPPDATA%` entries in `src/targets.rs`, and `windows-latest` added to the
-CI matrix.
+Inside WSL it's a normal Linux install and works fully — but note it cleans the caches of your *Linux* home, not `C:\Users\you\AppData`. Native Windows support is a welcome contribution, tracked in [#6](https://github.com/longwind48/diskzap/issues/6).
 
 </details>
 
 <details>
 <summary><b>All the flags</b> — the full CLI surface</summary>
-
 
 ```bash
 diskzap                        # package caches + docker only (no --root)
@@ -205,7 +207,11 @@ diskzap --root <dir>           # also scan <dir> for build artifacts; repeatable
 diskzap --apply                # delete instead of report
 diskzap --min-age-days 14      # skip anything used in the last 14 days
 diskzap --include-os-caches    # opt in to ~/Library/Caches (off by default)
+diskzap --include-vm-disks     # opt in to deleting container VM disk images
+diskzap --top N                # how many individual paths to list (default 12)
+diskzap --no-external          # skip docker prune / brew cleanup (for fake-$HOME testing)
 diskzap --json                 # machine-readable output
+diskzap --version              # print the version and exit (also -V)
 ```
 
 </details>
