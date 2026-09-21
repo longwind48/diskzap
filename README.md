@@ -165,7 +165,19 @@ build artifacts, list one project dir per line in
 reports package caches and Docker only, and never walks a directory you didn't
 name.
 
-**Just want the binary, no assistant?** It's a plain CLI:
+**Just want the binary, no assistant?** Grab a release build — no Rust
+toolchain needed. Every asset ships with a `.sha256` beside it:
+
+```bash
+# macOS (Apple silicon); swap for x86_64-apple-darwin or x86_64-unknown-linux-gnu
+curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz
+curl -fsSLO https://github.com/longwind48/diskzap/releases/latest/download/diskzap-aarch64-apple-darwin.tar.gz.sha256
+shasum -a 256 -c diskzap-aarch64-apple-darwin.tar.gz.sha256
+tar xzf diskzap-aarch64-apple-darwin.tar.gz && ./diskzap --help
+```
+
+Or build it yourself, which is the option to prefer if you'd rather not trust a
+binary you didn't compile:
 
 ```bash
 git clone https://github.com/longwind48/diskzap && cd diskzap
@@ -173,9 +185,9 @@ cargo build --release
 ./target/release/diskzap --help
 ```
 
-Put `target/release/diskzap` on your `PATH` to use the short commands above.
-No Rust toolchain? There's a pure-shell fallback with the same targets in
-[`references/fallback.md`](references/fallback.md).
+Put the binary on your `PATH` to use the short commands above. No Rust toolchain
+and no release for your platform? There's a pure-shell fallback with the same
+targets in [`references/fallback.md`](references/fallback.md).
 
 ### Platform support
 
@@ -342,8 +354,16 @@ before you re-add threads.
 `npx skills add` fetches and runs code from this repo. Before installing
 anything that can delete files, skim the source — it's deliberately small
 (`src/targets.rs` for what it touches, `src/safety.rs` for how it refuses
-everything else) — or pin to a tagged commit instead of `main`. The binary is
-compiled locally from that source; nothing prebuilt is ever downloaded.
+everything else) — or pin to a tagged commit instead of `main`. Installed that
+way, or via `herdr plugin install`, the binary is compiled locally from that
+source and nothing prebuilt is downloaded.
+
+The [release builds](https://github.com/longwind48/diskzap/releases) are the one
+exception, and being straight about it: those are binaries you did not compile,
+produced by [`release.yml`](.github/workflows/release.yml) on GitHub's runners
+from the tagged commit. The `.sha256` beside each asset proves the download
+matches what was uploaded, not that the upload matches the source. If that
+distinction matters to you, build from source — it takes about four seconds.
 
 ## Contributing
 
