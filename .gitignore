@@ -1,5 +1,4 @@
 /target
-Cargo.lock
 *.log
 
 # imagegen scratch output; finals live in assets/
