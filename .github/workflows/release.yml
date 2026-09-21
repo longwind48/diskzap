@@ -9,7 +9,19 @@ permissions:
   contents: write
 
 jobs:
+  # upload-rust-binary-action only uploads; it does not create the release, so
+  # without this job every matrix leg polls for a release that never appears and
+  # fails with "release not found".
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   upload:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
