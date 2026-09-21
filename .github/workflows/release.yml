@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/create-gh-release-action@v1
         with:
+          # Without this the action never looks for a changelog and publishes an
+          # empty body, which is what v0.2.0 and v0.3.0 shipped with.
+          changelog: CHANGELOG.md
+          title: $version
           token: ${{ secrets.GITHUB_TOKEN }}
 
   upload:
