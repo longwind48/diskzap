@@ -10,6 +10,7 @@ Reclaim your disk. Delete nothing you'll miss.
 
 <p align="center">
   <a href="https://github.com/longwind48/diskzap/actions/workflows/ci.yml"><img src="https://github.com/longwind48/diskzap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://crates.io/crates/diskzap"><img src="https://img.shields.io/crates/v/diskzap.svg" alt="crates.io"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="#safety"><img src="https://img.shields.io/badge/deletes-only%20on%20--apply-brightgreen.svg" alt="Dry-run by default"></a>
   <img src="https://img.shields.io/badge/rust-stable-orange.svg" alt="Rust stable">
@@ -165,8 +166,14 @@ build artifacts, list one project dir per line in
 reports package caches and Docker only, and never walks a directory you didn't
 name.
 
-**Just want the binary, no assistant?** Grab a release build — no Rust
-toolchain needed. Every asset ships with a `.sha256` beside it:
+**Just want the binary, no assistant?** With a Rust toolchain it's one line:
+
+```bash
+cargo install diskzap
+```
+
+Otherwise grab a release build — no toolchain needed. Every asset ships with a
+`.sha256` beside it:
 
 ```bash
 # macOS (Apple silicon); swap for x86_64-apple-darwin or x86_64-unknown-linux-gnu
